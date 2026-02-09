@@ -36,6 +36,7 @@ from memory_utils import (
     extract_session_metadata,
     find_all_branches,
     compute_branch_metadata,
+    aggregate_branch_content,
 )
 
 
@@ -207,6 +208,13 @@ def import_session(
                     "INSERT OR IGNORE INTO branch_messages (branch_id, message_id) VALUES (?, ?)",
                     (branch_db_id, msg_id)
                 )
+
+        # Aggregate branch content for FTS
+        agg_content = aggregate_branch_content(cursor, branch_db_id)
+        cursor.execute(
+            "UPDATE branches SET aggregated_content = ? WHERE id = ?",
+            (agg_content, branch_db_id)
+        )
 
         branches_imported += 1
 

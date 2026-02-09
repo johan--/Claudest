@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS branches (
   exchange_count INTEGER DEFAULT 0,
   files_modified TEXT,
   commits TEXT,
+  aggregated_content TEXT,
   UNIQUE(session_id, leaf_uuid)
 );
 CREATE INDEX IF NOT EXISTS idx_branches_session ON branches(session_id);
@@ -125,6 +126,25 @@ END;
 CREATE TRIGGER IF NOT EXISTS messages_au AFTER UPDATE ON messages BEGIN
   INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content);
   INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content);
+END;
+
+-- Branch-level FTS5 (aggregated content per branch, ranked by BM25)
+CREATE VIRTUAL TABLE IF NOT EXISTS branches_fts USING fts5(
+  aggregated_content,
+  content=branches,
+  content_rowid=id,
+  tokenize='porter unicode61'
+);
+
+CREATE TRIGGER IF NOT EXISTS branches_ai AFTER INSERT ON branches BEGIN
+  INSERT INTO branches_fts(rowid, aggregated_content) VALUES (new.id, new.aggregated_content);
+END;
+CREATE TRIGGER IF NOT EXISTS branches_ad AFTER DELETE ON branches BEGIN
+  INSERT INTO branches_fts(branches_fts, rowid, aggregated_content) VALUES('delete', old.id, old.aggregated_content);
+END;
+CREATE TRIGGER IF NOT EXISTS branches_au AFTER UPDATE ON branches BEGIN
+  INSERT INTO branches_fts(branches_fts, rowid, aggregated_content) VALUES('delete', old.id, old.aggregated_content);
+  INSERT INTO branches_fts(rowid, aggregated_content) VALUES (new.id, new.aggregated_content);
 END;
 
 -- Import tracking
@@ -668,3 +688,14 @@ def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[s
             unique_files.append(f)
 
     return exchange_count, unique_files, all_commits
+
+
+def aggregate_branch_content(cursor: sqlite3.Cursor, branch_db_id: int) -> str:
+    """Concatenate all message content for a branch in timestamp order."""
+    cursor.execute("""
+        SELECT m.content FROM branch_messages bm
+        JOIN messages m ON bm.message_id = m.id
+        WHERE bm.branch_id = ?
+        ORDER BY m.timestamp ASC
+    """, (branch_db_id,))
+    return "\n".join(row[0] for row in cursor.fetchall())

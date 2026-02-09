@@ -82,24 +82,16 @@ Use `--format json` when structured data is needed.
 
 ## Query Construction
 
-When building search queries from user requests, extract substantive keywords.
+When building search queries from user requests, extract substantive keywords. Search uses branch-level FTS with BM25 ranking — each branch's full conversation text is indexed as one document, so multi-word queries work naturally across message boundaries.
 
-**Include (high-confidence):**
-- Specific nouns: technologies, concepts, project names, proper nouns
-- Domain-specific terms: "OAuth", "SQL queries", "derivative"
-- Unique identifiers or unusual phrases
+**Include:** Specific nouns, technologies, concepts, project names, domain terms, unique phrases. More terms improve ranking precision — BM25 weights rare terms higher automatically.
 
-**Exclude (low-confidence):**
-- Generic verbs: "discuss", "talk", "mention", "say"
-- Time markers: "yesterday", "last week", "recently"
-- Vague nouns: "thing", "stuff", "issue", "problem"
-- Meta-conversation: "conversation", "chat", "question"
+**Exclude:** Generic verbs ("discuss", "talk"), time markers ("yesterday"), vague nouns ("thing", "stuff"), meta-conversation words ("conversation", "chat").
 
 **Algorithm:**
 1. Extract substantive keywords from user request
 2. If 0 keywords → ask for clarification ("Which project specifically?")
-3. If 1+ specific terms → search with those terms
-4. If initial search returns nothing → try broader terms or more sessions
+3. If 1+ specific terms → search with those terms; use `--project` to narrow scope
 
 ---
 

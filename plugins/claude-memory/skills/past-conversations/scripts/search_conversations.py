@@ -26,7 +26,7 @@ def search_sessions(
     projects: list[str] | None = None,
     verbose: bool = False
 ) -> list[dict]:
-    """Search for sessions containing query terms."""
+    """Search for sessions using branch-level FTS with BM25 ranking."""
     cursor = conn.cursor()
 
     terms = query.split()
@@ -35,42 +35,28 @@ def search_sessions(
 
     fts_query = " OR ".join(f'"{term}"' for term in terms)
 
-    # Find distinct session IDs with matches (messages are already deduplicated in v3)
+    # Single query: branch-level FTS with BM25 ranking
     sql = """
-        SELECT DISTINCT s.id
-        FROM messages_fts
-        JOIN messages m ON messages_fts.rowid = m.id
-        JOIN sessions s ON m.session_id = s.id
+        SELECT s.id, s.uuid, b.started_at, b.ended_at, b.files_modified,
+               b.commits, s.git_branch, p.name as project, b.id as branch_db_id
+        FROM branches_fts
+        JOIN branches b ON branches_fts.rowid = b.id
+        JOIN sessions s ON b.session_id = s.id
         JOIN projects p ON s.project_id = p.id
-        WHERE messages_fts MATCH ?
+        WHERE b.is_active = 1
+          AND branches_fts MATCH ?
     """
-    params = [fts_query]
+    params: list = [fts_query]
 
     if projects:
         placeholders = ",".join("?" * len(projects))
         sql += f" AND p.name IN ({placeholders})"
         params.extend(projects)
 
-    sql += " LIMIT ?"
+    sql += " ORDER BY bm25(branches_fts) LIMIT ?"
     params.append(max_results)
 
     cursor.execute(sql, params)
-    session_ids = [row[0] for row in cursor.fetchall()]
-
-    if not session_ids:
-        return []
-
-    # Fetch full session details with active branch metadata
-    placeholders = ",".join("?" * len(session_ids))
-    cursor.execute(f"""
-        SELECT s.id, s.uuid, b.started_at, b.ended_at, b.files_modified,
-               b.commits, s.git_branch, p.name as project, b.id as branch_db_id
-        FROM sessions s
-        JOIN branches b ON b.session_id = s.id AND b.is_active = 1
-        JOIN projects p ON s.project_id = p.id
-        WHERE s.id IN ({placeholders})
-        ORDER BY b.ended_at DESC
-    """, session_ids)
     sessions = cursor.fetchall()
 
     results = []
