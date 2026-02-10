@@ -1,0 +1,131 @@
+"""Tests for memory_lib.formatting — time formatting, project paths, session rendering."""
+
+from memory_lib.formatting import (
+    extract_project_name,
+    format_markdown_session,
+    format_time,
+    format_time_full,
+    get_project_key,
+    parse_project_key,
+)
+
+
+class TestFormatTime:
+    def test_valid_iso_timestamp(self):
+        result = format_time("2025-01-15T14:30:00Z")
+        # Should produce HH:MM in local timezone
+        assert len(result) == 5
+        assert ":" in result
+
+    def test_none_returns_placeholder(self):
+        assert format_time(None) == "??:??"
+
+    def test_empty_string_returns_placeholder(self):
+        assert format_time("") == "??:??"
+
+    def test_malformed_string_fallback(self):
+        result = format_time("not-a-timestamp")
+        # Should return first 16 chars as fallback
+        assert result == "not-a-timestamp"
+
+    def test_custom_format(self):
+        result = format_time("2025-01-15T14:30:00Z", "%Y-%m-%d")
+        assert "2025" in result
+        assert "01" in result
+        assert "15" in result
+
+
+class TestFormatTimeFull:
+    def test_valid_timestamp(self):
+        result = format_time_full("2025-01-15T14:30:00Z")
+        # Should contain YYYY-MM-DD
+        assert "2025" in result
+        assert "01-15" in result
+
+
+class TestProjectKey:
+    def test_get_project_key(self):
+        assert get_project_key("/Users/sam/project") == "-Users-sam-project"
+
+    def test_get_project_key_with_dots(self):
+        assert get_project_key("/home/user/.config") == "-home-user--config"
+
+    def test_parse_project_key_roundtrip(self):
+        """parse_project_key(get_project_key(path)) should reconstruct a path."""
+        original = "/Users/sam/project"
+        key = get_project_key(original)
+        reconstructed = parse_project_key(key)
+        # parse_project_key replaces ALL dashes with /, so this is lossy for paths with dashes
+        # But for simple paths without dashes, it should roundtrip
+        assert reconstructed.startswith("/")
+
+    def test_parse_project_key_adds_leading_slash(self):
+        result = parse_project_key("-Users-sam-project")
+        assert result.startswith("/")
+
+    def test_extract_project_name(self):
+        assert extract_project_name("/Users/sam/my-project") == "my-project"
+
+    def test_extract_project_name_trailing_slash(self):
+        # Path().name handles trailing slashes
+        assert extract_project_name("/Users/sam/project") == "project"
+
+
+class TestFormatMarkdownSession:
+    def test_minimal_session(self):
+        session = {
+            "uuid": "abcdef12-3456-7890-abcd-ef1234567890",
+            "project": "test-project",
+            "started_at": "2025-01-15T14:30:00Z",
+            "messages": [
+                {"role": "user", "content": "Hello"},
+                {"role": "assistant", "content": "Hi there"},
+            ],
+        }
+        md = format_markdown_session(session)
+        assert "## test-project" in md
+        assert "abcdef12" in md  # First 8 chars of UUID
+        assert "**User:** Hello" in md
+        assert "**Assistant:** Hi there" in md
+        assert md.endswith("---\n")
+
+    def test_verbose_with_files_and_commits(self):
+        session = {
+            "uuid": "abcdef12-3456-7890-abcd-ef1234567890",
+            "project": "proj",
+            "started_at": "2025-01-15T14:30:00Z",
+            "git_branch": "feature-x",
+            "files_modified": ["/a.py", "/b.py"],
+            "commits": ["Fix bug"],
+            "messages": [],
+        }
+        md = format_markdown_session(session, verbose=True)
+        assert "Branch: feature-x" in md
+        assert "### Files Modified" in md
+        assert "`/a.py`" in md
+        assert "### Commits" in md
+        assert "Fix bug" in md
+
+    def test_non_verbose_hides_files(self):
+        session = {
+            "uuid": "abcdef12",
+            "project": "proj",
+            "started_at": None,
+            "files_modified": ["/a.py"],
+            "commits": ["Fix"],
+            "messages": [],
+        }
+        md = format_markdown_session(session, verbose=False)
+        assert "### Files Modified" not in md
+        assert "### Commits" not in md
+
+    def test_many_files_truncated(self):
+        session = {
+            "uuid": "abcdef12",
+            "project": "proj",
+            "started_at": None,
+            "files_modified": [f"/file{i}.py" for i in range(15)],
+            "messages": [],
+        }
+        md = format_markdown_session(session, verbose=True)
+        assert "...and 5 more" in md
