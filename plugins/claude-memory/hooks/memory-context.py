@@ -21,13 +21,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "past-conversations" / "scripts"))
 
-from memory_utils import (
-    get_db_path,
-    load_settings,
-    format_time,
-    get_project_key,
-    setup_logging,
-)
+from memory_lib.db import get_db_path, load_settings, setup_logging
+from memory_lib.formatting import format_time, get_project_key
 
 
 def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_id: str, max_sessions: int) -> list[dict]:

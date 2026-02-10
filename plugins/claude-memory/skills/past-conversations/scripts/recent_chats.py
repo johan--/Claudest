@@ -12,11 +12,8 @@ import sys
 from pathlib import Path
 
 # Local imports
-from memory_utils import (
-    DEFAULT_DB_PATH,
-    format_markdown_session,
-    format_json_sessions,
-)
+from memory_lib.db import DEFAULT_DB_PATH
+from memory_lib.formatting import format_markdown_session, format_json_sessions
 
 
 def get_recent_sessions(

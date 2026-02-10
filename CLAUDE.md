@@ -36,13 +36,13 @@ On **SessionStart**, two hooks fire in order: `memory-setup.sh` creates the `~/.
 
 ### Database (v3 Schema)
 
-SQLite at `~/.claude-memory/conversations.db`. The key design: messages are stored once per session (deduped), and branches (from conversation rewinds) are tracked via a many-to-many `branch_messages` table. Two FTS5 indexes provide full-text search: `messages_fts` indexes individual messages, while `branches_fts` indexes aggregated branch content (all messages concatenated per branch) for BM25-ranked session search. Schema is defined in `memory_utils.py:SCHEMA` and auto-migrated on connection — if the schema version is outdated, the DB is deleted and recreated.
+SQLite at `~/.claude-memory/conversations.db`. The key design: messages are stored once per session (deduped), and branches (from conversation rewinds) are tracked via a many-to-many `branch_messages` table. Two FTS5 indexes provide full-text search: `messages_fts` indexes individual messages, while `branches_fts` indexes aggregated branch content (all messages concatenated per branch) for BM25-ranked session search. Schema is defined in `memory_lib/db.py:SCHEMA` and auto-migrated on connection — if the schema version is outdated, the DB is deleted and recreated.
 
 Tables: `projects`, `sessions`, `branches`, `messages`, `branch_messages`, `import_log`, `messages_fts` (virtual), `branches_fts` (virtual).
 
 ### Shared Code
 
-`plugins/claude-memory/skills/past-conversations/scripts/memory_utils.py` is the consolidated utility module (~22KB) used by all hooks and skill scripts. It handles DB connections, JSONL parsing, branch detection (UUID parent chain analysis), content extraction, settings loading, and markdown formatting. The `extract_text_content()` function returns a 4-tuple `(text, has_tool_use, has_thinking, tool_summary_json)` — tool markers are never materialized into stored text; instead tool counts are stored as compact JSON in `messages.tool_summary`.
+`plugins/claude-memory/skills/past-conversations/scripts/memory_lib/` is the shared utility package used by all hooks and skill scripts. It is split into four focused modules: `db.py` (database connection, schema, settings, logging), `content.py` (message content extraction and tool detection), `parsing.py` (JSONL parsing, branch detection via UUID parent chain analysis, metadata extraction), and `formatting.py` (session formatting, time/path utilities). The `extract_text_content()` function in `content.py` returns a 4-tuple `(text, has_tool_use, has_thinking, tool_summary_json)` — tool markers are never materialized into stored text; instead tool counts are stored as compact JSON in `messages.tool_summary`.
 
 ### Session Selection Algorithm
 
@@ -52,4 +52,4 @@ Tables: `projects`, `sessions`, `branches`, `messages`, `branch_messages`, `impo
 
 Commit messages use conventional commits: `feat(memory):`, `fix(memory):`, `chore(memory):`, `docs:`, `refactor(memory):`. Version is tracked in two places that must stay in sync: each plugin's `.claude-plugin/plugin.json` and the root `.claude-plugin/marketplace.json`. Always bump version before pushing changes.
 
-Settings live in `~/.claude-memory/settings.local.md` (YAML frontmatter), with defaults defined in `memory_utils.py:DEFAULT_SETTINGS`.
+Settings live in `~/.claude-memory/settings.local.md` (YAML frontmatter), with defaults defined in `memory_lib/db.py:DEFAULT_SETTINGS`.

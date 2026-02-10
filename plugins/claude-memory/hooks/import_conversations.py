@@ -20,24 +20,16 @@ from typing import Optional
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "past-conversations" / "scripts"))
 
-from memory_utils import (
-    DEFAULT_DB_PATH,
-    DEFAULT_PROJECTS_DIR,
-    get_db_path,
-    get_db_connection,
-    load_settings,
-    setup_logging,
-    parse_project_key,
-    extract_project_name,
-    extract_text_content,
-    is_tool_result,
-    parse_jsonl_file,
-    parse_all_with_uuids,
-    extract_session_metadata,
-    find_all_branches,
-    compute_branch_metadata,
-    aggregate_branch_content,
+from memory_lib.db import (
+    DEFAULT_DB_PATH, DEFAULT_PROJECTS_DIR, get_db_path,
+    get_db_connection, load_settings, setup_logging,
 )
+from memory_lib.content import extract_text_content, is_tool_result
+from memory_lib.parsing import (
+    parse_jsonl_file, parse_all_with_uuids, extract_session_metadata,
+    find_all_branches, compute_branch_metadata, aggregate_branch_content,
+)
+from memory_lib.formatting import parse_project_key, extract_project_name
 
 
 def get_file_hash(filepath: Path) -> str:
