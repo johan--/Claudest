@@ -11,6 +11,7 @@ from typing import Generator
 from memory_lib.content import (
     extract_commits,
     extract_files_modified,
+    is_task_notification,
     is_tool_result,
 )
 
@@ -199,6 +200,9 @@ def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[s
         if entry_type == "user" and is_tool_result(content):
             continue
 
+        if entry_type == "user" and is_task_notification(content):
+            continue
+
         if entry_type == "user":
             if has_user:
                 exchange_count += 1
@@ -223,11 +227,11 @@ def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[s
 
 
 def aggregate_branch_content(cursor: sqlite3.Cursor, branch_db_id: int) -> str:
-    """Concatenate all message content for a branch in timestamp order."""
+    """Concatenate all message content for a branch in timestamp order, excluding notifications."""
     cursor.execute("""
         SELECT m.content FROM branch_messages bm
         JOIN messages m ON bm.message_id = m.id
-        WHERE bm.branch_id = ?
+        WHERE bm.branch_id = ? AND COALESCE(m.is_notification, 0) = 0
         ORDER BY m.timestamp ASC
     """, (branch_db_id,))
     return "\n".join(row[0] for row in cursor.fetchall())

@@ -62,12 +62,13 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
         if exchange_count <= 1:
             continue
 
-        # Get messages for this branch via branch_messages
+        # Get messages for this branch via branch_messages (excluding task notifications)
         cursor.execute("""
             SELECT m.role, m.content, m.timestamp
             FROM branch_messages bm
             JOIN messages m ON bm.message_id = m.id
             WHERE bm.branch_id = ?
+              AND COALESCE(m.is_notification, 0) = 0
             ORDER BY m.timestamp ASC
         """, (branch_db_id,))
 

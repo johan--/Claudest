@@ -4,6 +4,7 @@ from memory_lib.content import (
     extract_commits,
     extract_files_modified,
     extract_text_content,
+    is_task_notification,
     is_tool_result,
 )
 
@@ -141,6 +142,43 @@ class TestIsToolResult:
 
     def test_none(self):
         assert is_tool_result(None) is False
+
+
+# --- is_task_notification ---
+
+
+class TestIsTaskNotification:
+    def test_string_content(self):
+        content = "<task-notification>\n<task-id>abc</task-id>\n<result>done</result>\n</task-notification>"
+        assert is_task_notification(content) is True
+
+    def test_list_content(self):
+        content = [{"type": "text", "text": "<task-notification>\n<task-id>abc</task-id>\n</task-notification>"}]
+        assert is_task_notification(content) is True
+
+    def test_normal_user_message(self):
+        assert is_task_notification("Hello, how are you?") is False
+
+    def test_tool_result_content(self):
+        content = [{"type": "tool_result", "tool_use_id": "abc", "content": "ok"}]
+        assert is_task_notification(content) is False
+
+    def test_empty_string(self):
+        assert is_task_notification("") is False
+
+    def test_empty_list(self):
+        assert is_task_notification([]) is False
+
+    def test_none(self):
+        assert is_task_notification(None) is False
+
+    def test_whitespace_prefix(self):
+        content = "  \n  <task-notification>\n<task-id>abc</task-id>\n</task-notification>"
+        assert is_task_notification(content) is True
+
+    def test_partial_match(self):
+        content = "I received a <task-notification> in the middle"
+        assert is_task_notification(content) is False
 
 
 # --- extract_files_modified ---

@@ -73,7 +73,10 @@ def format_markdown_session(session: dict, verbose: bool = False) -> str:
     lines.append("\n### Conversation\n")
 
     for msg in session.get("messages", []):
-        role = "User" if msg["role"] == "user" else "Assistant"
+        if msg.get("is_notification"):
+            role = "Subagent Result"
+        else:
+            role = "User" if msg["role"] == "user" else "Assistant"
         lines.append(f"**{role}:** {msg['content']}\n")
 
     lines.append("---\n")

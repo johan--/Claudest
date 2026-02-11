@@ -19,7 +19,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "past-conversations" / "scripts"))
 
 from memory_lib.db import DEFAULT_PROJECTS_DIR, get_db_connection, load_settings, setup_logging
-from memory_lib.content import extract_text_content, is_tool_result
+from memory_lib.content import extract_text_content, is_task_notification, is_tool_result
 from memory_lib.parsing import (
     parse_jsonl_file, parse_all_with_uuids, extract_session_metadata,
     find_all_branches, compute_branch_metadata, aggregate_branch_content,
@@ -124,6 +124,8 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
         if entry_type == "user" and is_tool_result(content):
             continue
 
+        notification = 1 if (entry_type == "user" and is_task_notification(content)) else 0
+
         text, has_tool_use, has_thinking, tool_summary = extract_text_content(content)
         if not text:
             continue
@@ -133,8 +135,8 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
             continue
 
         cursor.execute("""
-            INSERT INTO messages (session_id, uuid, parent_uuid, timestamp, role, content, tool_summary, has_tool_use, has_thinking)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO messages (session_id, uuid, parent_uuid, timestamp, role, content, tool_summary, has_tool_use, has_thinking, is_notification)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(session_id, uuid) DO NOTHING
         """, (
             session_id,
@@ -145,7 +147,8 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
             text,
             tool_summary,
             has_tool_use,
-            has_thinking
+            has_thinking,
+            notification,
         ))
         if cursor.rowcount > 0:
             new_count += 1

@@ -129,3 +129,33 @@ class TestFormatMarkdownSession:
         }
         md = format_markdown_session(session, verbose=True)
         assert "...and 5 more" in md
+
+    def test_notification_message_labeled(self):
+        session = {
+            "uuid": "abcdef12",
+            "project": "proj",
+            "started_at": None,
+            "messages": [
+                {"role": "user", "content": "Start research"},
+                {"role": "assistant", "content": "Launching agents."},
+                {"role": "user", "content": "<task-notification>result</task-notification>", "is_notification": 1},
+                {"role": "assistant", "content": "Agent done."},
+            ],
+        }
+        md = format_markdown_session(session)
+        assert "**Subagent Result:**" in md
+        assert "**User:** Start research" in md
+        assert "**Assistant:** Launching agents." in md
+
+    def test_non_notification_user_not_labeled_as_subagent(self):
+        session = {
+            "uuid": "abcdef12",
+            "project": "proj",
+            "started_at": None,
+            "messages": [
+                {"role": "user", "content": "Hello", "is_notification": 0},
+            ],
+        }
+        md = format_markdown_session(session)
+        assert "**User:** Hello" in md
+        assert "Subagent Result" not in md

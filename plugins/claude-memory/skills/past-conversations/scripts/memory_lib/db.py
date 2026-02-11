@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS messages (
   tool_summary TEXT,
   has_tool_use INTEGER DEFAULT 0,
   has_thinking INTEGER DEFAULT 0,
+  is_notification INTEGER DEFAULT 0,
   UNIQUE(session_id, uuid)
 );
 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
@@ -249,6 +250,41 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
     existing = {row[1] for row in cursor.fetchall()}
     if "tool_summary" not in existing:
         cursor.execute("ALTER TABLE messages ADD COLUMN tool_summary TEXT")
+        conn.commit()
+    if "is_notification" not in existing:
+        cursor.execute("ALTER TABLE messages ADD COLUMN is_notification INTEGER DEFAULT 0")
+        # Backfill existing notification messages
+        cursor.execute("""
+            UPDATE messages SET is_notification = 1
+            WHERE role = 'user' AND content LIKE '<task-notification>%'
+        """)
+        # Re-aggregate branches that contained notifications (fix FTS + exchange_count)
+        cursor.execute("""
+            SELECT DISTINCT bm.branch_id
+            FROM branch_messages bm
+            JOIN messages m ON bm.message_id = m.id
+            WHERE m.is_notification = 1
+        """)
+        affected_branches = [row[0] for row in cursor.fetchall()]
+        for bid in affected_branches:
+            # Re-aggregate content excluding notifications
+            cursor.execute("""
+                SELECT m.content FROM branch_messages bm
+                JOIN messages m ON bm.message_id = m.id
+                WHERE bm.branch_id = ? AND COALESCE(m.is_notification, 0) = 0
+                ORDER BY m.timestamp ASC
+            """, (bid,))
+            agg = "\n".join(row[0] for row in cursor.fetchall())
+            cursor.execute("UPDATE branches SET aggregated_content = ? WHERE id = ?", (agg, bid))
+            # Recalculate exchange_count (human user messages only)
+            cursor.execute("""
+                SELECT COUNT(*) FROM branch_messages bm
+                JOIN messages m ON bm.message_id = m.id
+                WHERE bm.branch_id = ? AND m.role = 'user' AND COALESCE(m.is_notification, 0) = 0
+            """, (bid,))
+            human_user_count = cursor.fetchone()[0]
+            cursor.execute("UPDATE branches SET exchange_count = ? WHERE id = ?",
+                           (human_user_count, bid))
         conn.commit()
 
 

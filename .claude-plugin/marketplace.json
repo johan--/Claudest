@@ -8,7 +8,7 @@
     {
       "name": "claude-memory",
       "description": "Searchable conversation memory with FTS5 indexing",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "source": "./plugins/claude-memory"
     },
     {

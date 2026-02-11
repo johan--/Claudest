@@ -21,7 +21,8 @@ def search_sessions(
     query: str,
     max_results: int = 5,
     projects: list[str] | None = None,
-    verbose: bool = False
+    verbose: bool = False,
+    include_notifications: bool = False
 ) -> list[dict]:
     """Search for sessions using branch-level FTS with BM25 ranking."""
     cursor = conn.cursor()
@@ -62,15 +63,17 @@ def search_sessions(
         _session_id, uuid, started_at, ended_at, files_json, commits_json, git_branch, project, branch_db_id = session
 
         # Get messages for active branch via branch_messages
-        cursor.execute("""
-            SELECT m.role, m.content, m.timestamp
+        notif_clause = "" if include_notifications else "AND COALESCE(m.is_notification, 0) = 0"
+        cursor.execute(f"""
+            SELECT m.role, m.content, m.timestamp, COALESCE(m.is_notification, 0) as is_notification
             FROM branch_messages bm
             JOIN messages m ON bm.message_id = m.id
-            WHERE bm.branch_id = ?
+            WHERE bm.branch_id = ? {notif_clause}
             ORDER BY m.timestamp ASC
         """, (branch_db_id,))
 
-        messages = [{"role": r, "content": c, "timestamp": t} for r, c, t in cursor.fetchall()]
+        messages = [{"role": r, "content": c, "timestamp": t, "is_notification": notif}
+                    for r, c, t, notif in cursor.fetchall()]
 
         session_data = {
             "uuid": uuid,
@@ -109,6 +112,7 @@ def main():
     parser.add_argument("--project", type=str, help="Filter by project name(s), comma-separated")
     parser.add_argument("--format", choices=["markdown", "json"], default="markdown", help="Output format (default: markdown)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Include files_modified and commits")
+    parser.add_argument("--include-notifications", action="store_true", help="Include task notification messages (hidden by default)")
     parser.add_argument("--db", type=Path, default=DEFAULT_DB_PATH, help="Database path")
 
     args = parser.parse_args()
@@ -125,7 +129,8 @@ def main():
     try:
         conn = sqlite3.connect(args.db)
         sessions = search_sessions(conn, query=args.query, max_results=max_results,
-                                   projects=projects, verbose=args.verbose)
+                                   projects=projects, verbose=args.verbose,
+                                   include_notifications=args.include_notifications)
         conn.close()
 
         if args.format == "json":

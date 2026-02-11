@@ -21,6 +21,7 @@ EXPECTED = {
     "tool_heavy": {"branches": 1, "active_exchanges": 2},
     "single_rewind": {"branches": 3, "active_exchanges": 5},
     "multi_rewind": {"branches": 4, "active_exchanges": 7},
+    "with_notifications": {"branches": 1, "active_exchanges": 2},
 }
 
 
@@ -212,6 +213,21 @@ class TestComputeBranchMetadata:
         ]
         count, files, commits = compute_branch_metadata(entries)
         assert count == 2
+
+    def test_notifications_not_counted_as_exchanges(self):
+        """Task notification messages should not inflate exchange_count."""
+        entries = [
+            {"type": "user", "message": {"content": "Research AI memory"}},
+            {"type": "assistant", "message": {"content": "Let me launch agents."}},
+            {"type": "user", "message": {"content": "<task-notification><task-id>abc</task-id><result>done</result></task-notification>"}},
+            {"type": "assistant", "message": {"content": "Agent completed."}},
+            {"type": "user", "message": {"content": "<task-notification><task-id>def</task-id><result>also done</result></task-notification>"}},
+            {"type": "assistant", "message": {"content": "All agents done."}},
+            {"type": "user", "message": {"content": "Summarize the results"}},
+            {"type": "assistant", "message": {"content": "Here is the summary."}},
+        ]
+        count, _, _ = compute_branch_metadata(entries)
+        assert count == 2  # Only "Research AI memory" and "Summarize the results"
 
     def test_tool_results_not_counted_as_exchanges(self):
         entries = [
