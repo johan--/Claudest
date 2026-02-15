@@ -267,53 +267,73 @@ def get_db_path(settings: Optional[dict] = None) -> Path:
     return DEFAULT_DB_PATH
 
 
+def _reaggregate_notification_branches(cursor: sqlite3.Cursor) -> None:
+    """Re-aggregate branches that contain notification messages.
+
+    Updates aggregated_content and exchange_count to exclude notifications.
+    Called after backfilling is_notification on existing messages.
+    """
+    cursor.execute("""
+        SELECT DISTINCT bm.branch_id
+        FROM branch_messages bm
+        JOIN messages m ON bm.message_id = m.id
+        WHERE m.is_notification = 1
+    """)
+    affected_branches = [row[0] for row in cursor.fetchall()]
+    for bid in affected_branches:
+        cursor.execute("""
+            SELECT m.content FROM branch_messages bm
+            JOIN messages m ON bm.message_id = m.id
+            WHERE bm.branch_id = ? AND COALESCE(m.is_notification, 0) = 0
+            ORDER BY m.timestamp ASC
+        """, (bid,))
+        agg = "\n".join(row[0] for row in cursor.fetchall())
+        cursor.execute("UPDATE branches SET aggregated_content = ? WHERE id = ?", (agg, bid))
+        cursor.execute("""
+            SELECT COUNT(*) FROM branch_messages bm
+            JOIN messages m ON bm.message_id = m.id
+            WHERE bm.branch_id = ? AND m.role = 'user' AND COALESCE(m.is_notification, 0) = 0
+        """, (bid,))
+        human_user_count = cursor.fetchone()[0]
+        cursor.execute("UPDATE branches SET exchange_count = ? WHERE id = ?",
+                       (human_user_count, bid))
+
+
 def _migrate_columns(conn: sqlite3.Connection) -> None:
-    """Add any missing columns to existing tables (idempotent)."""
+    """Add missing columns (DDL, idempotent) and run versioned data migrations (DML)."""
     cursor = conn.cursor()
     cursor.execute("PRAGMA table_info(messages)")
     existing = {row[1] for row in cursor.fetchall()}
+
+    # --- DDL migrations (column-existence gated, idempotent) ---
     if "tool_summary" not in existing:
         cursor.execute("ALTER TABLE messages ADD COLUMN tool_summary TEXT")
         conn.commit()
     if "is_notification" not in existing:
         cursor.execute("ALTER TABLE messages ADD COLUMN is_notification INTEGER DEFAULT 0")
-        # Backfill existing notification messages
+        conn.commit()
+
+    # --- DML migrations (version-gated via PRAGMA user_version, run once) ---
+    version = conn.execute("PRAGMA user_version").fetchone()[0]
+
+    if version < 1:
+        # v0.5.0: Backfill task-notification messages
         cursor.execute("""
             UPDATE messages SET is_notification = 1
-            WHERE role = 'user' AND content LIKE '<task-notification>%'
+            WHERE role = 'user' AND content LIKE '<task-notification>%' AND is_notification = 0
         """)
-        # Backfill teammate messages as notifications
+        _reaggregate_notification_branches(cursor)
+        conn.execute("PRAGMA user_version = 1")
+        conn.commit()
+
+    if version < 2:
+        # v0.7.1: Backfill teammate messages as notifications
         cursor.execute("""
             UPDATE messages SET is_notification = 1
             WHERE role = 'user' AND content LIKE '<teammate-message%' AND is_notification = 0
         """)
-        # Re-aggregate branches that contained notifications (fix FTS + exchange_count)
-        cursor.execute("""
-            SELECT DISTINCT bm.branch_id
-            FROM branch_messages bm
-            JOIN messages m ON bm.message_id = m.id
-            WHERE m.is_notification = 1
-        """)
-        affected_branches = [row[0] for row in cursor.fetchall()]
-        for bid in affected_branches:
-            # Re-aggregate content excluding notifications
-            cursor.execute("""
-                SELECT m.content FROM branch_messages bm
-                JOIN messages m ON bm.message_id = m.id
-                WHERE bm.branch_id = ? AND COALESCE(m.is_notification, 0) = 0
-                ORDER BY m.timestamp ASC
-            """, (bid,))
-            agg = "\n".join(row[0] for row in cursor.fetchall())
-            cursor.execute("UPDATE branches SET aggregated_content = ? WHERE id = ?", (agg, bid))
-            # Recalculate exchange_count (human user messages only)
-            cursor.execute("""
-                SELECT COUNT(*) FROM branch_messages bm
-                JOIN messages m ON bm.message_id = m.id
-                WHERE bm.branch_id = ? AND m.role = 'user' AND COALESCE(m.is_notification, 0) = 0
-            """, (bid,))
-            human_user_count = cursor.fetchone()[0]
-            cursor.execute("UPDATE branches SET exchange_count = ? WHERE id = ?",
-                           (human_user_count, bid))
+        _reaggregate_notification_branches(cursor)
+        conn.execute("PRAGMA user_version = 2")
         conn.commit()
 
 
@@ -341,6 +361,7 @@ def get_db_connection(settings: Optional[dict] = None) -> sqlite3.Connection:
         conn = sqlite3.connect(db_path)
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA busy_timeout = 5000")
+        conn.execute("PRAGMA foreign_keys = ON")
 
     if not migrated:
         # Apply schema (handles fresh databases, idempotent)

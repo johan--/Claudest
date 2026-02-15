@@ -118,7 +118,14 @@ def import_session(
     cursor.execute("SELECT id FROM sessions WHERE uuid = ?", (session_uuid,))
     session_id = cursor.fetchone()[0]
 
-    # Step 2: Insert ALL messages once (delete + reinsert for re-import)
+    # Step 2: Clear existing data for re-import (FK-safe order: branch_messages → branches → messages)
+    cursor.execute("SELECT id FROM branches WHERE session_id = ?", (session_id,))
+    old_branch_ids = [row[0] for row in cursor.fetchall()]
+    if old_branch_ids:
+        placeholders = ",".join("?" * len(old_branch_ids))
+        # Placeholders are auto-generated "?" strings; values are DB-generated integers
+        cursor.execute(f"DELETE FROM branch_messages WHERE branch_id IN ({placeholders})", old_branch_ids)
+    cursor.execute("DELETE FROM branches WHERE session_id = ?", (session_id,))
     cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
 
     total_messages = 0
@@ -170,18 +177,7 @@ def import_session(
     )
     uuid_to_msg_id = {row[1]: row[0] for row in cursor.fetchall()}
 
-    # Step 4: Upsert branches + rebuild branch_messages
-    # First, clear old branches for this session
-    cursor.execute(
-        "SELECT id FROM branches WHERE session_id = ?",
-        (session_id,)
-    )
-    old_branch_ids = [row[0] for row in cursor.fetchall()]
-    if old_branch_ids:
-        placeholders = ",".join("?" * len(old_branch_ids))
-        cursor.execute(f"DELETE FROM branch_messages WHERE branch_id IN ({placeholders})", old_branch_ids)
-    cursor.execute("DELETE FROM branches WHERE session_id = ?", (session_id,))
-
+    # Step 4: Build branches + branch_messages
     branches_imported = 0
 
     for branch in branches:

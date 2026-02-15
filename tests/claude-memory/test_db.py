@@ -135,6 +135,101 @@ class TestMigrateColumns:
         conn.close()
 
 
+def _versioned_db(user_version=0, include_is_notification=True):
+    """Create in-memory DB with specific user_version for testing versioned migrations."""
+    conn = sqlite3.connect(":memory:")
+    notif_col = ", is_notification INTEGER DEFAULT 0" if include_is_notification else ""
+    conn.execute(f"""
+        CREATE TABLE messages (
+            id INTEGER PRIMARY KEY, session_id INTEGER, uuid TEXT,
+            parent_uuid TEXT, timestamp DATETIME, role TEXT,
+            content TEXT NOT NULL, tool_summary TEXT,
+            has_tool_use INTEGER DEFAULT 0, has_thinking INTEGER DEFAULT 0{notif_col},
+            UNIQUE(session_id, uuid)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE branches (
+            id INTEGER PRIMARY KEY, session_id INTEGER, leaf_uuid TEXT,
+            fork_point_uuid TEXT, is_active INTEGER DEFAULT 1,
+            started_at DATETIME, ended_at DATETIME, exchange_count INTEGER DEFAULT 0,
+            files_modified TEXT, commits TEXT, aggregated_content TEXT
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE branch_messages (
+            branch_id INTEGER, message_id INTEGER, PRIMARY KEY (branch_id, message_id)
+        )
+    """)
+    conn.execute(f"PRAGMA user_version = {user_version}")
+    conn.commit()
+    return conn
+
+
+class TestVersionedMigration:
+    def test_fresh_db_gets_latest_version(self):
+        """A fresh DB (no columns, version 0) should end up at user_version = 2."""
+        conn = _pre_migration_db()
+        _migrate_columns(conn)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        assert version == 2
+        conn.close()
+
+    def test_v0_to_v2_backfills_both(self):
+        """From version 0, both task-notification and teammate messages get backfilled."""
+        conn = _versioned_db(user_version=0)
+        conn.execute("INSERT INTO messages (id, session_id, role, content) VALUES (1, 1, 'user', 'Hello')")
+        conn.execute("INSERT INTO messages (id, session_id, role, content) VALUES (2, 1, 'user', '<task-notification>task</task-notification>')")
+        conn.execute("INSERT INTO messages (id, session_id, role, content) VALUES (3, 1, 'user', '<teammate-message teammate_id=\"x\">report</teammate-message>')")
+        conn.commit()
+
+        _migrate_columns(conn)
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, is_notification FROM messages ORDER BY id")
+        rows = cursor.fetchall()
+        assert rows[0] == (1, 0)
+        assert rows[1] == (2, 1)
+        assert rows[2] == (3, 1)
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        conn.close()
+
+    def test_v1_to_v2_backfills_only_teammate(self):
+        """From version 1, only teammate messages get backfilled (task-notifications already done)."""
+        conn = _versioned_db(user_version=1)
+        # Simulate a DB where task-notifications were already flagged by version 1
+        conn.execute("INSERT INTO messages (id, session_id, role, content, is_notification) VALUES (1, 1, 'user', '<task-notification>task</task-notification>', 1)")
+        conn.execute("INSERT INTO messages (id, session_id, role, content, is_notification) VALUES (2, 1, 'user', '<teammate-message teammate_id=\"x\">report</teammate-message>', 0)")
+        conn.execute("INSERT INTO messages (id, session_id, role, content, is_notification) VALUES (3, 1, 'user', 'Normal message', 0)")
+        conn.commit()
+
+        _migrate_columns(conn)
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, is_notification FROM messages ORDER BY id")
+        rows = cursor.fetchall()
+        assert rows[0] == (1, 1)  # Already flagged, untouched
+        assert rows[1] == (2, 1)  # Newly flagged by version 2
+        assert rows[2] == (3, 0)  # Normal, untouched
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        conn.close()
+
+    def test_v2_skips_all_migrations(self):
+        """From version 2, no migrations run."""
+        conn = _versioned_db(user_version=2)
+        conn.execute("INSERT INTO messages (id, session_id, role, content, is_notification) VALUES (1, 1, 'user', '<teammate-message>should stay 0</teammate-message>', 0)")
+        conn.commit()
+
+        _migrate_columns(conn)
+
+        # Should NOT have been flagged (migration already ran)
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_notification FROM messages WHERE id = 1")
+        assert cursor.fetchone()[0] == 0
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        conn.close()
+
+
 class TestLoadSettings:
     def test_always_returns_defaults(self):
         """load_settings always returns hardcoded defaults (YAML was removed)."""

@@ -289,6 +289,51 @@ class TestImportLogTracking:
         assert first_timestamp is not None, "import_log should have timestamp"
 
 
+class TestFKSafeReimport:
+    """Test that reimport works with foreign keys enabled."""
+
+    def test_reimport_with_fk_enabled(self, memory_db, project_id):
+        """Reimporting with PRAGMA foreign_keys = ON should not raise IntegrityError."""
+        memory_db.execute("PRAGMA foreign_keys = ON")
+        fixture_file = FIXTURE_DIR / "linear_3_exchange.jsonl"
+
+        # First import
+        branches1, messages1 = import_session(memory_db, fixture_file, project_id)
+        assert branches1 > 0
+        memory_db.commit()
+
+        # Invalidate the import_log hash to force reimport
+        cursor = memory_db.cursor()
+        cursor.execute("UPDATE import_log SET file_hash = 'stale' WHERE file_path = ?",
+                       (str(fixture_file),))
+        memory_db.commit()
+
+        # Reimport should succeed without IntegrityError
+        branches2, messages2 = import_session(memory_db, fixture_file, project_id)
+        assert branches2 > 0, "Reimport should succeed"
+        assert messages2 > 0, "Messages should be reimported"
+        memory_db.commit()
+
+    def test_reimport_with_branches_fk(self, memory_db, project_id):
+        """Reimport of branched conversation with FK enabled should not crash."""
+        memory_db.execute("PRAGMA foreign_keys = ON")
+        fixture_file = FIXTURE_DIR / "single_rewind.jsonl"
+
+        branches1, messages1 = import_session(memory_db, fixture_file, project_id)
+        assert branches1 == 3
+        memory_db.commit()
+
+        # Force reimport
+        cursor = memory_db.cursor()
+        cursor.execute("UPDATE import_log SET file_hash = 'stale' WHERE file_path = ?",
+                       (str(fixture_file),))
+        memory_db.commit()
+
+        branches2, messages2 = import_session(memory_db, fixture_file, project_id)
+        assert branches2 == 3, "Reimport should produce same branch count"
+        memory_db.commit()
+
+
 class TestBranchMetadata:
     """Test that branch metadata is correctly computed."""
 
