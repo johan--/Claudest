@@ -15,14 +15,12 @@ allowed-tools:
 
 # Video Convert
 
-General-purpose video manipulation: format conversion, trimming, speed, resize, rotation, frame extraction.
-
 Identify the operation type first, then apply the matching pattern below. For multi-operation requests (e.g., trim + resize + convert), chain all filters in a single ffmpeg invocation — avoid intermediate files.
 
 ## Process
 
 1. Identify the operation(s) from the user's request.
-2. Probe codec and dimensions when the operation requires them (noted in each pattern below).
+2. Probe codec when converting formats; probe dimensions when resizing. Speed, rotation, flip, and frame extraction do not require probing.
 3. Construct the command using the appropriate pattern.
 4. Confirm with the user before running.
 5. Run and report output file path and size.

@@ -18,25 +18,31 @@ Compress a video using quality-based (CRF) or size-based (2-pass) encoding.
 
 ## Process
 
-### 1. Probe the source
+### 1. Obtain input file
+
+If the user did not provide a file path, ask for it with AskUserQuestion before proceeding.
+
+### 2. Probe the source
 
 ```bash
 ffprobe -v quiet -print_format json -show_streams -show_format "$INPUT"
 ```
 
-Extract: duration (seconds), file size (bytes), existing video codec, audio bitrate.
+Extract: duration (seconds), file size (bytes), existing video codec, audio bitrate. If ffprobe fails (file not found, not a valid video), report the error and stop — do not attempt encoding.
 
-### 2. Determine mode from user intent
+### 3. Determine mode from user intent
 
 - **CRF mode** (quality-based): user says "without losing quality", "good quality", "make it smaller", or gives no size target
 - **2-pass mode** (size-based): user specifies a target ("under 50MB", "around 20MB", "fit on X")
 
-### 3. Choose codec
+### 4. Choose codec
+
+H.264 is the safe default: universally device-compatible and fast to encode. Use H.265 only when the size reduction justifies the slower encode time and narrower device support.
 
 - **H.265 / libx265**: target is ≤50% of original size, or user asks for "maximum compression" / "HEVC"
 - **H.264 / libx264**: otherwise — faster encode, wider device compatibility, safe default
 
-### 4. Construct command
+### 5. Construct command
 
 **CRF mode:**
 ```bash
@@ -51,6 +57,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/video-compress/scripts/calc_bitrate.py "$IN
 # Outputs: VIDEO_BITRATE_KBPS (integer)
 # Formula: (target_mb * 8192 / duration_s) - audio_bitrate_kbps
 # Typical audio budget: 128 kbps
+# Exit 1 = target too small (bitrate would go negative); report the error and ask for a larger target before retrying.
 
 # Pass 1 — video analysis only, no output file:
 ffmpeg -y -i "$INPUT" -c:v libx264 -b:v ${VIDEO_BITRATE_KBPS}k -pass 1 -an -f null /dev/null
@@ -60,11 +67,11 @@ ffmpeg -i "$INPUT" -c:v libx264 -b:v ${VIDEO_BITRATE_KBPS}k -pass 2 \
   -c:a aac -b:a 128k -movflags +faststart "$OUTPUT"
 ```
 
-### 5. Confirm with user
+### 6. Confirm with user
 
 Show: input file size, chosen codec, mode (CRF value or calculated bitrate), output path. Wait for approval before running.
 
-### 6. Run and report
+### 7. Run and report
 
 After completion: input size → output size, compression ratio (e.g., "73.2 MB → 18.4 MB, 75% reduction").
 

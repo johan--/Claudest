@@ -12,10 +12,6 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# Audio Extract
-
-Extract or convert audio from any video or audio file.
-
 ## Format Decision Tree
 
 | User wants | Format | Flags | Why |
@@ -45,7 +41,7 @@ for i, s in enumerate(streams):
 
 Apply the decision tree above if the user didn't specify. If the source audio codec already matches the target, use `-c:a copy` to avoid transcoding.
 
-If multiple audio streams exist, ask the user which to extract — or use `-map 0:a` to extract all.
+If multiple audio streams exist, ask the user which to extract — or use `-map 0:a` to extract all. Once the user responds, apply `-map 0:a:N` (where N is the zero-based stream index they chose) or `-map 0:a` for all streams in the Phase 3 command.
 
 ### 3. Construct command
 
@@ -69,6 +65,8 @@ Show: detected source codec and bitrate, chosen output format, output path. Wait
 Report output file size and duration: `ffprobe -v quiet -show_format "$OUTPUT" | grep -E "duration|size"`
 
 ## Key Decisions
+
+Preserve generation quality: avoid transcoding chains that degrade source fidelity. Each decision below is an application of this principle.
 
 - **Lossy-to-lossy warning**: if the source is already lossy (MP3, AAC, OGG) and the user wants a different lossy format, warn them that re-encoding degrades quality. Recommend keeping the source format or using `-c:a copy` where container compatibility allows.
 - For files >1 hour, ask whether the user wants the full file or a specific range — trimming can be added with `-ss` and `-to` before `-vn`.

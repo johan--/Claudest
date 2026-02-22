@@ -45,12 +45,14 @@ Extract: width, height, duration, existing bitrate, audio codec.
 
 ### 3. Determine required transforms
 
-- **Aspect ratio mismatch** → crop or pad (see Key Decisions for the choice rule)
-- **Resolution too large** → scale down (never upscale)
-- **Duration exceeds platform limit** → trim; confirm cut point with user first
-- **Bitrate over limit** → re-encode with target bitrate
+Compare probe output against the platform row in the presets table. Apply only the transforms that are actually needed:
 
-If source already matches target aspect ratio, resolution, and bitrate, a simple re-encode with `-movflags +faststart` may be all that's needed.
+- **Aspect ratio mismatch** → crop or pad (see Key Decisions for the choice rule)
+- **Resolution too large** → scale down (never upscale; social platforms reject oversized files at upload)
+- **Duration exceeds platform limit** → trim; confirm cut point with user first
+- **Bitrate over limit** → re-encode with target bitrate (platforms reject or silently degrade over-bitrate uploads)
+
+Exit condition: when all four properties (aspect ratio, resolution, duration, bitrate) are within platform bounds and `-movflags +faststart` will be set, proceed to Step 4. If source already matches all properties, skip to Step 5 with a simple re-encode plan.
 
 ### 4. Construct command
 
