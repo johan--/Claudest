@@ -26,7 +26,7 @@
     {
       "name": "claude-coding",
       "description": "Git workflow skills: intelligent commits, push & PR management, and branch cleanup",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "source": "./plugins/claude-coding"
     }
   ]
