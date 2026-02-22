@@ -22,6 +22,12 @@
       "description": "Skill authoring tools: generate, audit, and improve Claude Code skills and commands",
       "version": "0.1.0",
       "source": "./plugins/claude-skills"
+    },
+    {
+      "name": "claude-coding",
+      "description": "Git workflow skills: intelligent commits, push & PR management, and branch cleanup",
+      "version": "0.1.0",
+      "source": "./plugins/claude-coding"
     }
   ]
 }

@@ -76,6 +76,24 @@ Both skills share a `references/` library: a skill anatomy gold standard, a comp
 
 ---
 
+### claude-coding
+
+Git workflow skills for Claude Code. Three skills covering the full coding commit loop.
+
+Every coding session involves the same git decisions: what belongs in one commit vs multiple, whether you're on the right branch before pushing, what to call the PR. These skills encode the right defaults and handle the mechanical parts so the workflow stays uninterrupted.
+
+`commit` analyzes your changes, groups files by purpose rather than directory, runs the project's linter if one is configured, and writes a conventional commit message. It handles multi-concern changes by splitting them and committing foundational changes first.
+
+`push-pr` detects if you're on `main` with unpushed commits, cuts a feature branch before pushing, and creates or updates a PR. It calls `commit` first if there are uncommitted changes. New PRs are opened; subsequent pushes to the same branch add a comment with the new commits.
+
+`clean-branches` finds merged and stale branches (no commits in 30+ days), shows them categorized as safe-to-delete vs stale, and confirms before touching anything. Protected branches (main, master, develop, release/*) are never touched. Remote deletion requires explicit confirmation.
+
+```
+/plugin install claude-coding@claudest
+```
+
+---
+
 ## Contributing
 
 This is a curated set of tools I personally maintain, not an open-submission marketplace. If you find bugs or have suggestions, open an issue. If you want to run your own marketplace with your own battle-tested tools, fork this and make it yours.
