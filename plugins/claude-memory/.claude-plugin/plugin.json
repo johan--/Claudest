@@ -4,5 +4,6 @@
   "version": "0.7.3",
   "author": {
     "name": "Samarth Gupta"
-  }
+  },
+  "keywords": ["memory", "conversations", "search", "context", "sqlite"]
 }
