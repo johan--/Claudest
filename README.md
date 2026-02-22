@@ -58,6 +58,24 @@ Triggers on "convert this page to markdown", "extract this webpage", "save this 
 
 ---
 
+### claude-skills
+
+Skill authoring tools for Claude Code. Two complementary skills: one that generates new skills and commands from scratch, one that audits and improves existing ones.
+
+Writing a good skill is harder than it looks. The description has to route correctly without being verbose — it's loaded on every session regardless of whether the skill fires, so every token costs something. The body has to be precise enough to produce consistent outcomes but loose enough that the model isn't re-generating boilerplate that should be a script. The agentic and deterministic parts of the workflow should be deliberately separated, not accidentally mixed. Most skills that feel "fine" are underspecified, over-verbose, or missing infrastructure they'd benefit from.
+
+`skill-creator` interviews you about requirements (or reads them from arguments), fetches the latest Claude Code documentation, and generates a skill or slash command with correct frontmatter, trigger phrases, progressive disclosure structure, and a script opportunity scan. It checks your workflow for steps that should be proper CLI tools — parameterized, dual-use, designed for both Claude invocation and direct terminal use — and either scaffolds them or delegates to the `create-cli` skill.
+
+`skill-repair` reads an existing skill and produces a structured improvement report covering seven dimensions: frontmatter quality, execution modifiers, intensional vs extensional instruction, agentic/deterministic split, verbosity, workflow clarity, and anatomy completeness. The report distinguishes violations (something wrong) from gaps (something absent that would raise quality). It knows what a well-formed skill looks like at each complexity tier — simple, standard, complex — and can identify when a skill is missing infrastructure like reference files, scripts, or examples that would concretely improve it.
+
+Both skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, and a script patterns reference with five signal patterns for recognizing CLI candidates.
+
+```
+/plugin install claude-skills@claudest
+```
+
+---
+
 ## Contributing
 
 This is a curated set of tools I personally maintain, not an open-submission marketplace. If you find bugs or have suggestions, open an issue. If you want to run your own marketplace with your own battle-tested tools, fork this and make it yours.

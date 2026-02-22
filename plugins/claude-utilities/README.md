@@ -1,19 +1,28 @@
-# Claude Utilities
+# claude-utilities
 
-A collection of useful utilities, tools, and skills for Claude Code.
+Useful tools that don't fit in a specific plugin.
+
+## Installation
+
+```
+/plugin marketplace add gupsammy/claudest
+/plugin install claude-utilities@claudest
+```
 
 ## Skills
 
 ### web-to-markdown
 
-Convert any webpage to clean markdown using the ezycopy CLI. Removes ads, navigation, and clutter to get just the article content.
+Convert any webpage to clean markdown. Strips ads, navigation, popups, and cookie banners and returns just the article content. Uses [ezycopy](https://github.com/gupsammy/EzyCopy) under the hood.
 
-**Triggers**: "convert this page to markdown", "extract this webpage", "save this article", "grab content from URL", "scrape this page"
+Triggers on "convert this page to markdown", "extract this webpage", "save this article", "grab content from URL", "scrape this page".
 
-## Prerequisites
+**Prerequisite:** install ezycopy once before use:
 
-- [ezycopy](https://github.com/gupsammy/EzyCopy): `curl -sSL https://raw.githubusercontent.com/gupsammy/EzyCopy/main/install.sh | sh`
+```bash
+curl -sSL https://raw.githubusercontent.com/gupsammy/EzyCopy/main/install.sh | sh
+```
 
-## Installation
+## License
 
-Add to your Claude Code plugins or install via the claudest marketplace.
+MIT
