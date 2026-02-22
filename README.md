@@ -78,9 +78,9 @@ Both skills share a `references/` library: a skill anatomy gold standard, a comp
 
 ### claude-coding
 
-Git workflow skills for Claude Code. Three skills covering the full coding commit loop.
+Coding workflow skills for Claude Code. Four skills covering the commit loop and project maintenance.
 
-Every coding session involves the same git decisions: what belongs in one commit vs multiple, whether you're on the right branch before pushing, what to call the PR. These skills encode the right defaults and handle the mechanical parts so the workflow stays uninterrupted.
+Every coding session involves the same decisions: what belongs in one commit vs multiple, whether you're on the right branch before pushing, what to call the PR, whether your project docs still reflect reality. These skills encode the right defaults and handle the mechanical parts so the workflow stays uninterrupted.
 
 `commit` analyzes your changes, groups files by purpose rather than directory, runs the project's linter if one is configured, and writes a conventional commit message. It handles multi-concern changes by splitting them and committing foundational changes first.
 
@@ -88,8 +88,24 @@ Every coding session involves the same git decisions: what belongs in one commit
 
 `clean-branches` finds merged and stale branches (no commits in 30+ days), shows them categorized as safe-to-delete vs stale, and confirms before touching anything. Protected branches (main, master, develop, release/*) are never touched. Remote deletion requires explicit confirmation.
 
+`updateclaudemd` audits and optimizes your project's CLAUDE.md. Reads the current file, explores the codebase to verify accuracy, cuts anything that doesn't change how Claude acts in the next session, and rewrites for scannability. Creates a `.bak` backup before writing.
+
 ```
 /plugin install claude-coding@claudest
+```
+
+---
+
+### claude-thinking
+
+Structured thinking tools for Claude Code. Skills that use dialogue to help you clarify, stress-test, and articulate ideas, then produce a written artifact.
+
+Some of the best thinking happens in conversation, but unstructured conversation wanders. These skills provide just enough framework to keep the dialogue productive: domain-calibrated questioning intensity, saturation detection so it knows when to stop, and structured output so the results are reusable.
+
+`thinking-partner` conducts an in-depth interview calibrated to the domain — adversarial probing for strategy, gentle exploration for personal decisions, Socratic depth for abstract topics. Detects saturation after 4+ rounds of recurring themes and produces a synthesis document (spec, brief, decision doc, reflection) with key themes, decisions, open questions, and constraints. User quotes are woven into the synthesis where apt, never dumped as raw transcript.
+
+```
+/plugin install claude-thinking@claudest
 ```
 
 ---

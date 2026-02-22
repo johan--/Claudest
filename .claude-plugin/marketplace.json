@@ -25,9 +25,15 @@
     },
     {
       "name": "claude-coding",
-      "description": "Git workflow skills: intelligent commits, push & PR management, and branch cleanup",
-      "version": "0.1.2",
+      "description": "Coding workflow skills: intelligent commits, push & PR, branch cleanup, and CLAUDE.md maintenance",
+      "version": "0.1.3",
       "source": "./plugins/claude-coding"
+    },
+    {
+      "name": "claude-thinking",
+      "description": "Structured thinking tools: interviews, decision frameworks, and reasoning aids",
+      "version": "0.1.0",
+      "source": "./plugins/claude-thinking"
     }
   ]
 }

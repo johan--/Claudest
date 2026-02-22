@@ -4,3 +4,4 @@ __pycache__/
 SECURITY_AUDIT.md
 agents/
 claude-code-analytics.html
+plugins/*/docs/
