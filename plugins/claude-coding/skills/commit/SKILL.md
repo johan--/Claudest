@@ -1,18 +1,18 @@
 ---
 name: commit
 description: >
-  Analyze and commit changes with intelligent file grouping and conventional commits.
-  Use when user says "commit my changes", "commit this", "git commit", "save my work",
-  "stage and commit", or mentions committing code. Also triggers on "create a commit"
-  or "commit what I've done".
-model: claude-sonnet-4-5 
+  This skill should be used when the user says "commit my changes", "commit this",
+  "git commit", "save my work", "stage and commit", or mentions committing code.
+  Also triggers on "create a commit" or "commit what I've done".
+model: sonnet
 context: fork
+agent: general-purpose
+argument-hint: "[push]"
 allowed-tools:
-  - Bash
-  - Read
-  - Grep
-  - Glob
-  - Skill
+  - Bash(git:*)
+  - Bash(cargo:*)
+  - Bash(npm:*)
+  - Bash(ruff:*)
   - AskUserQuestion
 ---
 
@@ -49,24 +49,28 @@ For each changed file, write a one-line PURPOSE description (not file location).
 - Same goal = one commit
 - Different goals = separate commits
 
-Ask yourself: "Would I explain these as one thing or multiple things?"
+Each commit should represent one logical change because atomic commits enable `git bisect` and `git revert` without side-effects.
 
 **Signs of separate concerns:**
 - "Added X" AND "Fixed Y" (feature + bugfix)
 - Changes that could be reverted independently
 
-If multiple concerns: Use `git reset HEAD` then `git add <specific-files>` for each group. Commit foundational changes first.
+If multiple concerns: use `git reset HEAD` then `git add <specific-files>` for each group. Commit foundational changes first.
 
-**Handle renames (R status):** When splitting, add BOTH old and new paths to preserve rename detection.
+**Handle renames (R status):** When splitting, add BOTH old and new paths. Git detects renames by similarity scoring across the old/new pair — staging only the new path causes git to log a delete + add, losing rename history.
 
 ### 4. Validate (if available)
 
-Check for project type and run validation:
-- `Cargo.toml` → `cargo fmt --check && cargo build`
-- `package.json` → `npm run lint && npm run build` (if scripts exist)
-- `pyproject.toml` → `ruff check .` (if available)
+Run the validation script after staging:
 
-Skip gracefully if tools unavailable. If validation fails, report error and stop.
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/validate.py . --output json
+```
+
+Interpret the result:
+- Exit 0 → validation passed; proceed to Step 5
+- Exit 1 → validation failed; parse the `output` field, report the error to the user, and stop
+- Exit 2 → no validator found for this project; skip gracefully and proceed to Step 5
 
 ### 5. Create Commit
 
@@ -91,8 +95,18 @@ Use conventional commit format:
 
 ### 6. Push (if requested)
 
-If user mentions "push" or arguments contain "push", then push using git push.
+If user mentions "push" or arguments contain "push", run `git push`. If push fails, report the error and stop — do not retry or force-push.
 
 ## Output
 
-Report: files committed, commit hash and message, excluded temporary files.
+One line per commit (hash + message). If temporary files were excluded, list them as bullets below.
+
+## Scripts
+
+`scripts/validate.py` — detects project type and runs the appropriate linter. Invoked in Step 4.
+
+```bash
+# Usage
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/validate.py .
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/validate.py /path/to/project --output json
+```

@@ -138,7 +138,7 @@ Generate the PR body using the format script. Pass the correct base branch — f
 PRs this is the previous cluster's branch, not necessarily `$BASE`:
 
 ```bash
-python3 ~/.claude/skills/push-pr/scripts/format-pr-body.py --base "$BASE"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base "$BASE"
 ```
 
 Exit 1 means no changes found relative to base; report to user. On success, use stdout
@@ -188,8 +188,8 @@ history and diff stats. Invoked in step 7.
 
 ```bash
 # Usage
-python3 ~/.claude/skills/push-pr/scripts/format-pr-body.py --base main
-python3 ~/.claude/skills/push-pr/scripts/format-pr-body.py --base feat/auth --output json
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base main
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base feat/auth --output json
 ```
 
 Exit 0: PR body written to stdout. Exit 1: no changes found (script reports to stderr).
