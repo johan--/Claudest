@@ -88,17 +88,21 @@ def run_ytdlp(
 # Result formatting
 # ---------------------------------------------------------------------------
 
-def format_entry(entry: dict) -> dict:
-    """Normalize a yt-dlp entry dict to the standard result shape."""
+def format_entry(entry: dict, channel_fallback: str = "") -> dict:
+    """Normalize a yt-dlp entry dict to the standard result shape.
+
+    channel_fallback is used when per-entry channel is None (e.g. flat-playlist
+    on channel pages where the channel is implicit from the playlist URL).
+    """
     return {
-        "id": entry.get("id", ""),
-        "title": entry.get("title", ""),
-        "channel": entry.get("channel") or entry.get("uploader", ""),
+        "id": entry.get("id") or "",
+        "title": entry.get("title") or "",
+        "channel": entry.get("channel") or entry.get("uploader") or channel_fallback,
         "duration": entry.get("duration"),
-        "duration_string": entry.get("duration_string", ""),
+        "duration_string": entry.get("duration_string") or "",
         "view_count": entry.get("view_count"),
-        "upload_date": entry.get("upload_date", ""),
-        "url": entry.get("webpage_url") or entry.get("url", ""),
+        "upload_date": entry.get("upload_date") or "",
+        "url": entry.get("webpage_url") or entry.get("url") or "",
         "description": (entry.get("description") or "")[:500],
     }
 
@@ -185,30 +189,45 @@ def _to_plain(lines: list) -> str:
 
 
 def _to_srt(lines: list) -> str:
-    """Convert VTT lines to SRT format preserving timestamps."""
+    """Convert VTT lines to SRT format preserving timestamps.
+
+    Auto-generated captions use a scrolling window where each cue repeats
+    the previous line plus appends a new one. We deduplicate by tracking
+    the previous cue's text and only emitting lines that are new.
+    """
     result: list = []
     counter = 0
+    prev_texts: list = []
     i = 0
     while i < len(lines):
         line = lines[i].strip()
         if "-->" in line:
-            counter += 1
             ts = line.replace(".", ",")
-            result.append(str(counter))
-            result.append(ts)
             i += 1
+            cur_texts: list = []
             while i < len(lines) and lines[i].strip():
                 text = re.sub(r"<[^>]*>", "", lines[i].strip())
                 text = (
                     text.replace("&amp;", "&")
                     .replace("&gt;", ">")
                     .replace("&lt;", "<")
+                    .replace("\\h", " ")
                 )
+                text = re.sub(r" {2,}", " ", text).strip()
                 if text:
-                    result.append(text)
+                    cur_texts.append(text)
                 i += 1
-            result.append("")
-        i += 1
+            # Only keep lines not already shown in the previous cue
+            new_texts = [t for t in cur_texts if t not in prev_texts]
+            if new_texts:
+                counter += 1
+                result.append(str(counter))
+                result.append(ts)
+                result.extend(new_texts)
+                result.append("")
+            prev_texts = cur_texts
+        else:
+            i += 1
     return "\n".join(result)
 
 
@@ -535,7 +554,9 @@ def cmd_channel(args, g):
     except json.JSONDecodeError:
         raise ResearchError("Failed to parse yt-dlp output")
 
-    entries = [format_entry(e) for e in data.get("entries", [])]
+    # Channel name is on the playlist object, not per-entry in flat mode
+    ch_name = data.get("channel") or data.get("uploader") or ""
+    entries = [format_entry(e, channel_fallback=ch_name) for e in data.get("entries", [])]
 
     if args.after:
         entries = [e for e in entries if (e.get("upload_date") or "") >= args.after]
