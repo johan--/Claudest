@@ -1,6 +1,9 @@
 ---
 name: extract-learnings
-description: Persist learnings to the correct memory layer. Triggers on "extract learnings".
+description: >
+  Persist learnings to the correct memory layer. Triggers on "extract learnings",
+  "save this for next time", "remember this pattern", "add this to memory",
+  "update CLAUDE.md with what we learned", "store this insight".
 allowed-tools:
   - Read
   - Write
@@ -8,11 +11,10 @@ allowed-tools:
   - Glob
   - Grep
   - Bash(python3:*)
+  - AskUserQuestion
 ---
 
 # extract-learnings
-
-Distill learnings from conversations and place them at the correct layer in the memory hierarchy for maximum agent attention. Bridges recall memory (past conversations) into archival memory (persistent, curated knowledge).
 
 ## Memory Hierarchy
 
@@ -55,13 +57,17 @@ Reuse the past-conversations tools when retrieval from prior sessions is needed.
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/recent_chats.py --n 10
 ```
 
+Returns markdown-formatted sessions with exchange headers, timestamps, and project paths. Use `--format json` for structured filtering.
+
 ### search_conversations
 
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/search_conversations.py --query "keyword"
 ```
 
-See the past-conversations skill for full option reference (`--n`, `--project`, `--verbose`, etc.).
+Returns matching sessions ranked by relevance (BM25 when FTS5 available). Use `--format json` for structured result parsing.
+
+For full option catalogs, load `${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/references/tool-reference.md`.
 
 ## Workflow
 
@@ -79,24 +85,11 @@ Deduce intent from available context. Do not assume where learnings come from.
 
 - **Ambiguous intent**: Use `AskUserQuestion` to clarify what to extract and from where. Do not guess.
 
+Exit Stage 1 when at least one source of candidate learnings is in context (current conversation content or retrieved past sessions). If ambiguous intent remains unresolved after one `AskUserQuestion` round, stop and report.
+
 ### Stage 2: Analysis & Distillation
 
-Identify candidate learnings from gathered context. For each candidate, determine: the learning itself (condensed to 1-2 sentences), the target layer (via the decision tree above), and the target section within that file.
-
-#### Learning Categories
-
-| Category | Typical Layer | Example |
-|----------|---------------|---------|
-| Behavioral correction | 0 | "Don't add docstrings unless asked" |
-| Workflow preference | 0 | "Always use bun, never npm" |
-| Architecture decision + rationale | 1 | "WAL mode for concurrent read safety" |
-| Build/deploy gotcha | 1 | "Must bump version in two files" |
-| Config quirk | 1 | "No PyYAML — settings are hardcoded defaults" |
-| Package/module relationship | 1 | "memory_lib is shared across hooks and skills" |
-| Version history note | 2 | "v0.6.0: added extract-learnings skill" |
-| Debugging insight | 2 or 3 | Brief → L2, detailed → L3 |
-| Command/workflow discovered | 1 or 2 | Project-specific → L1, general → L2 |
-| Repeatable manual pattern | Meta | "We keep doing X → suggest a skill" |
+Identify candidate learnings from gathered context. For each candidate, determine: the learning itself (condensed to 1-2 sentences), the target layer (via the decision tree above), and the target section within that file. Use `--format json` when filtering or counting sessions programmatically; use default markdown when synthesizing content for the user.
 
 ### Stage 3: Placement Proposal
 
@@ -120,7 +113,7 @@ This is the critical stage. Never write without explicit approval.
 
 4. **Layer 0 extra gate** — if any learning targets `~/.claude/CLAUDE.md`, add an explicit warning: "This will be added to your global instructions loaded in every session across all projects. Confirm?"
 
-5. **MEMORY.md line check** — if MEMORY.md is near the 200-line limit, warn and suggest moving content to topic files (Layer 3) to free space. Lines beyond 200 are truncated by the auto-memory system.
+5. **MEMORY.md line check** — read the target MEMORY.md and count lines. If line count exceeds 170, warn that content beyond line 200 is truncated by auto-memory and suggest moving lower-priority sections to topic files (Layer 3) before adding new content.
 
 6. **Get approval** — use `AskUserQuestion` with options:
    - "Approve all" — apply all proposed changes
@@ -176,23 +169,3 @@ Before proposing any learning:
 - Is it condensed to the minimum needed to be useful?
 - Is it placed at the right layer (not too broad, not too narrow)?
 - Does the target file not already contain this knowledge?
-
-## Examples
-
-### Example 1: Project gotcha → Layer 1
-
-User: "save this — FTS triggers must be created after the tables, not before, or SQLite silently drops them"
-
-This is a project-specific technical gotcha about the claude-memory codebase. Routes to Layer 1 (repo CLAUDE.md), Database section. Proposed addition: "FTS triggers must be created after their backing tables — SQLite silently drops triggers on nonexistent tables."
-
-### Example 2: Behavioral preference → Layer 0
-
-User: "I keep forgetting to tell you — never run past-conversations unless I explicitly ask"
-
-Universal behavioral preference, not project-specific. Routes to Layer 0 (global CLAUDE.md). Extra confirmation gate required since this affects all projects.
-
-### Example 3: Broad extraction → Multiple layers
-
-User: "extract learnings from our recent sessions"
-
-Gather via `recent_chats.py --n 10`. Identify 3-4 significant learnings across conversations. Propose each at its appropriate layer with diffs and rationale. Use `AskUserQuestion` for batch approval before writing anything.
