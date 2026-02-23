@@ -36,6 +36,7 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 | [claude-thinking](#claude-thinking) | `0.1.4` | brainstorm |
 | [claude-content](#claude-content) | `0.2.3` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
 | [claude-utilities](#claude-utilities) | `0.1.7` | convert-to-markdown |
+| [claude-claw](#claude-claw) | `0.1.0` | claw-advisor |
 
 ---
 
@@ -201,6 +202,24 @@ curl -sSL https://raw.githubusercontent.com/gupsammy/EzyCopy/main/install.sh | s
 
 ```
 /plugin install claude-utilities@claudest
+```
+
+---
+
+<a id="claude-claw"></a>
+
+### 🦞 claude-claw &nbsp; ![v0.1.0](https://img.shields.io/badge/v0.1.0-blue?style=flat-square)
+
+OpenClaw advisory, troubleshooting, and configuration guidance for Claude Code.
+
+OpenClaw is a local AI gateway — it routes model requests, manages channels (Telegram, webhooks, API), and handles multi-model configuration. Getting it set up correctly involves enough moving parts (gateway config, channel setup, provider selection, health checks) that having an advisor baked into the agent is useful.
+
+`claw-advisor` answers OpenClaw questions, suggests optimal configuration, and diagnoses issues. It uses two backends: `clawdocs` for documentation lookup (always available) and `openclaw` for live state inspection (when the gateway is running). It classifies the question — focused, broad, troubleshooting, or design — and shapes the research accordingly. Focused questions get a single doc fetch; broad or cross-cutting questions spawn parallel subagents, one per topic area; troubleshooting questions always consult three sources — the domain doc, the domain troubleshooting page, and the general troubleshooting guide — then cross-references with `openclaw doctor` output if available.
+
+Responses are structured: direct answer first, then exact config keys with full dot-paths usable with `openclaw config get/set`, context on why the configuration is recommended, known gotchas, and a list of doc slugs consulted so you can dive deeper. It never invents OpenClaw flags or config keys — every claim traces back to fetched documentation.
+
+```
+/plugin install claude-claw@claudest
 ```
 
 ---

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add claude-claw plugin (v0.1.0) with claw-advisor skill for OpenClaw configuration, troubleshooting, and guidance
 - Add create-cli skill for structured command-line application design
 - Add update-readme skill for intelligent README generation and maintenance
 - Overhaul youtube-research with adaptive multi-round discovery pipeline featuring parallel Task agents and niche-first heuristics for edge-of-tech content
