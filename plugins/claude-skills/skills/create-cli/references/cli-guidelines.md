@@ -234,6 +234,47 @@ This is a practical rubric for designing CLI interfaces (args/flags/subcommands/
 - 12 Factor CLI Apps
 - Heroku CLI Style Guide
 
+## Agent Ergonomics
+
+These guidelines extend the human-first philosophy for tools where the primary caller is an
+AI agent (LLM-based coding assistant, automated pipeline, etc.). Agents are trained on
+standard CLI conventions and will use them — the goal is not a new interface but rigorous
+application of existing conventions with agent consumption in mind.
+
+### Output defaults
+
+- Detect TTY: emit structured JSON when stdout is not a TTY (agents are always non-TTY);
+  pretty/human output when stdout is a TTY. No flag required for the common case.
+- List commands: NDJSON (one object per line) in non-TTY mode, not a JSON array — enables
+  streaming and `jq` piping without buffering the full output.
+- Suppress ANSI codes, progress indicators, and decorative output in non-TTY mode.
+- `--json` and `--human` remain available as explicit overrides.
+
+### Structured errors
+
+- Error objects on stderr in non-TTY mode:
+  `{"error": "<snake_case_code>", "message": "<sentence>", "hint": "<exact CLI invocation or null>"}`
+- `hint` must be an executable command the agent can run directly — not a prose suggestion.
+  Good: `"hint": "snapr list --json"`. Bad: `"hint": "Check available snapshots first."`.
+
+### Reduce tool calls
+
+- Compound output: `create` returns the new resource's ID and key fields; `delete` echoes
+  what was removed. Agents should not need a follow-up call to discover the result.
+- Rich non-TTY defaults: in JSON mode, return full objects. Include enough context that a
+  second call is rarely needed.
+- Consistent patterns: same flag names across subcommands for the same concept. Agents learn
+  the pattern once and apply it everywhere.
+- Idempotency: document which commands are safe to repeat. Agents rely on idempotency for
+  error recovery without human intervention.
+
+### Discovery
+
+- Compact top-level `--help`: tight enough that the agent reads it once and maps the full
+  surface area without nested help-diving.
+- The spec document (not `--help`) is the primary agent reference when the tool is used in a
+  skill or CLAUDE.md context. Design it to be read by a model, not just by a person.
+
 ## Authors
 
 Original "Command Line Interface Guidelines" authors (and many contributors): Aanand Prasad, Ben Firshman, Carl Tashian, Eva Parish. Design by Mark Hurrell.

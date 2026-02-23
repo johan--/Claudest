@@ -1,7 +1,8 @@
 # Example CLI Spec: `snapr`
 
-A complete worked example covering all deliverable sections. Use as a reference for
-output format and level of detail.
+A complete worked example covering all deliverable sections, including agent-aware patterns:
+TTY auto-detection, NDJSON list output, structured errors with executable hints, and compound
+output. Use as a reference for output format and level of detail.
 
 ---
 
@@ -20,7 +21,7 @@ snapr [global flags] <subcommand> [args]
 
 snapr snapshot <path> [--name <name>] [--tag <tag>]
 snapr restore  <snapshot-id> <target-path> [--force] [--dry-run]
-snapr list     [--json] [--tag <tag>]
+snapr list     [--tag <tag>]
 snapr delete   <snapshot-id> [--force]
 ```
 
@@ -28,7 +29,7 @@ snapr delete   <snapshot-id> [--force]
 
 | Subcommand | Description | Idempotent? |
 |-----------|-------------|-------------|
-| `snapshot <path>` | Capture a versioned archive of `<path>`. | Yes — creates a new snapshot each time |
+| `snapshot <path>` | Capture a versioned archive of `<path>`. Returns snapshot ID + metadata. | Creates a new snapshot each time |
 | `restore <id> <target>` | Restore snapshot to `<target>`. Fails if target non-empty without `--force`. | No — overwrites data |
 | `list` | List all snapshots; filter by tag. | Yes |
 | `delete <id>` | Delete a snapshot. Prompts for confirmation unless `--force`. | No |
@@ -41,7 +42,7 @@ snapr delete   <snapshot-id> [--force]
 | `--version` | bool | — | Print version to stdout, exit 0 |
 | `-q, --quiet` | bool | false | Suppress progress output; errors still go to stderr |
 | `-v, --verbose` | bool | false | Emit debug output to stderr |
-| `--json` | bool | false | Machine-readable JSON on stdout |
+| `--human` | bool | false | Force human-readable output even when piped |
 | `--no-color` | bool | false | Disable ANSI color; also respected via `NO_COLOR` env var |
 | `--config <path>` | string | `~/.snapr/config.toml` | Path to config file |
 
@@ -56,15 +57,22 @@ Subcommand-specific flags:
 
 ## 6. I/O contract
 
-**stdout:** Snapshot IDs, list output, version string. `--json` converts all stdout to
-JSON objects. `--quiet` suppresses everything except the final ID on `snapshot`.
+**Output mode (TTY auto-detection):** When stdout is a TTY, emit human-readable colored
+output. When stdout is piped or non-TTY (always the case for agent callers), emit structured
+JSON automatically — no flag required. `--human` forces human output; `--json` is accepted
+as an alias for non-TTY mode.
 
-**stderr:** Progress messages, verbose debug, warnings, errors. Never emitted in `--json` mode.
+**stdout:** Snapshot objects, list output (NDJSON in non-TTY — one JSON object per line),
+version string. `snapshot` always returns the created snapshot's ID and metadata fields on
+stdout, even in quiet mode, so callers don't need a follow-up `list` call.
+
+**stderr:** Progress messages, verbose debug, warnings. In non-TTY mode, errors are emitted
+as a structured JSON object (see §7). Never mixes with stdout.
 
 **stdin:** `restore` accepts `-` as `<target>` to pipe restored content to stdout
 (single-file snapshots only).
 
-## 7. Exit codes
+## 7. Exit codes and error format
 
 | Code | Meaning |
 |------|---------|
@@ -72,6 +80,15 @@ JSON objects. `--quiet` suppresses everything except the final ID on `snapshot`.
 | `1` | Runtime error (snapshot not found, I/O failure, permission denied) |
 | `2` | Invalid usage (unknown flag, missing required arg, bad type) |
 | `3` | Target conflict — restore target is non-empty and `--force` not passed |
+
+**Non-TTY error object** (emitted on stderr):
+```json
+{"error": "not_found", "message": "Snapshot 'abc123' does not exist.", "hint": "snapr list --json"}
+```
+
+The three fields are always present: `error` (snake_case machine code), `message` (one
+human-readable sentence), `hint` (exact CLI invocation the caller can run to recover,
+or `null` if no recovery action applies).
 
 ## 8. Env/config
 
@@ -97,24 +114,23 @@ config (`~/.snapr/config.toml`) > built-in defaults.
 ## 9. Examples
 
 ```bash
-# Take a snapshot with a label
+# Create a snapshot — stdout returns full object; agent can read ID without a follow-up call
 snapr snapshot ./src --name "before-refactor" --tag "dev"
+# non-TTY output: {"id":"abc123","name":"before-refactor","tag":"dev","path":"./src","created_at":"2026-02-23T14:00:00Z"}
 
-# List all snapshots, machine-readable
-snapr list --json | jq '.[] | select(.tag == "dev")'
+# List all snapshots — NDJSON in non-TTY mode, one object per line; pipeable without buffering
+snapr list --tag "dev" | jq -r '.id'
+# abc123
+# def456
 
-# Preview a restore without writing
+# Restore non-interactively in CI — --force skips confirmation; exit code signals outcome
+snapr restore abc123 ./src --force --quiet
+# exit 0 on success; exit 3 if target non-empty (agent checks exit code, not stderr)
+
+# Preview a restore — dry-run + non-TTY shows JSON diff of what would change
 snapr restore abc123 ./src --dry-run
 
-# Restore non-interactively in CI
-snapr restore abc123 ./src --force --quiet
-
-# Delete a snapshot
-snapr delete abc123
-
-# Pipe single-file snapshot to stdout
-snapr restore def456 -
-
-# Quiet snapshot in a pre-commit hook
-SNAPR_DIR=/tmp/hooks snapr snapshot . --quiet
+# Agent error recovery pattern — hint field contains the exact next command to run
+snapr restore xyz999 ./src --force
+# stderr: {"error":"not_found","message":"Snapshot 'xyz999' does not exist.","hint":"snapr list --json"}
 ```
