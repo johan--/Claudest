@@ -1,9 +1,9 @@
 {
   "name": "claude-skills",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Skill authoring tools: generate, audit, and improve Claude Code skills and commands",
   "author": {
     "name": "Samarth Gupta"
   },
-  "keywords": ["skills", "skill-creator", "skill-repair", "prompt-engineering", "meta-prompting"]
+  "keywords": ["skills", "create-skill", "repair-skill", "improve-skill", "prompt-engineering", "meta-prompting"]
 }

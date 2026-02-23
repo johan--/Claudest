@@ -32,7 +32,7 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 | [claude-memory](#claude-memory) | `0.7.5` | past-conversations · extract-learnings |
 | [claude-research](#claude-research) | `0.1.0` | deep-research · youtube-research |
 | [claude-coding](#claude-coding) | `0.1.8` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog |
-| [claude-skills](#claude-skills) | `0.1.3` | skill-creator · skill-repair |
+| [claude-skills](#claude-skills) | `0.1.4` | create-skill · repair-skill · improve-skill |
 | [claude-thinking](#claude-thinking) | `0.1.2` | thinking-partner |
 | [claude-content](#claude-content) | `0.2.1` | image-generation · video-compress · video-convert · video-gif · video-social · audio-extract |
 | [claude-utilities](#claude-utilities) | `0.1.5` | web-to-markdown |
@@ -118,17 +118,19 @@ Every coding session involves the same decisions: what belongs in one commit vs 
 
 <a id="claude-skills"></a>
 
-### ✍️ claude-skills &nbsp; ![v0.1.3](https://img.shields.io/badge/v0.1.3-blue?style=flat-square)
+### ✍️ claude-skills &nbsp; ![v0.1.4](https://img.shields.io/badge/v0.1.4-blue?style=flat-square)
 
-Skill authoring tools for Claude Code. Two complementary skills: one that generates new skills and commands from scratch, one that audits and improves existing ones.
+Skill authoring tools for Claude Code. Three complementary skills that cover the full lifecycle: generate, audit, improve.
 
 Writing a good skill is harder than it looks. The description has to route correctly without being verbose — it's loaded on every session regardless of whether the skill fires, so every token costs something. The body has to be precise enough to produce consistent outcomes but loose enough that the model isn't re-generating boilerplate that should be a script. The agentic and deterministic parts of the workflow should be deliberately separated, not accidentally mixed. Most skills that feel "fine" are underspecified, over-verbose, or missing infrastructure they'd benefit from.
 
-`skill-creator` interviews you about requirements (or reads them from arguments), fetches the latest Claude Code documentation, and generates a skill or slash command with correct frontmatter, trigger phrases, progressive disclosure structure, and a script opportunity scan. It checks your workflow for steps that should be proper CLI tools — parameterized, dual-use, designed for both Claude invocation and direct terminal use — and either scaffolds them or delegates to the `create-cli` skill.
+`create-skill` interviews you about requirements (or reads them from arguments), fetches the latest Claude Code documentation, and generates a skill or slash command with correct frontmatter, trigger phrases, progressive disclosure structure, and a script opportunity scan. It checks your workflow for steps that should be proper CLI tools — parameterized, dual-use, designed for both Claude invocation and direct terminal use — and either scaffolds them or delegates to the `create-cli` skill.
 
-`skill-repair` reads an existing skill and produces a structured improvement report covering seven dimensions: frontmatter quality, execution modifiers, intensional vs extensional instruction, agentic/deterministic split, verbosity, workflow clarity, and anatomy completeness. The report distinguishes violations (something wrong) from gaps (something absent that would raise quality). It knows what a well-formed skill looks like at each complexity tier — simple, standard, complex — and can identify when a skill is missing infrastructure like reference files, scripts, or examples that would concretely improve it.
+`repair-skill` reads an existing skill and produces a structured improvement report covering seven dimensions: frontmatter quality, execution modifiers, intensional vs extensional instruction, agentic/deterministic split, verbosity, workflow clarity, and anatomy completeness. The report distinguishes violations (something wrong) from gaps (something absent that would raise quality). It knows what a well-formed skill looks like at each complexity tier — simple, standard, complex — and can identify when a skill is missing infrastructure like reference files, scripts, or examples that would concretely improve it.
 
-Both skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, and a script patterns reference with five signal patterns for recognizing CLI candidates.
+`improve-skill` asks the complementary question: not "is this skill structurally correct?" but "does it accomplish what users need?" It models user intent, walks through the skill as Claude with a real request to find stuck points and dead ends, verifies factual claims against current documentation, scans for missing adjacent capabilities, and reviews UX flow for friction. Findings are grouped by outcome type — new features, accuracy fixes, UX improvements, efficiency gains — and applied with user selection.
+
+All three skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, and a script patterns reference with five signal patterns for recognizing CLI candidates.
 
 ```
 /plugin install claude-skills@claudest
