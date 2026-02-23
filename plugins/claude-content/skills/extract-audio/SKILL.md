@@ -1,5 +1,5 @@
 ---
-name: audio-extract
+name: extract-audio
 description: >
   This skill should be used when the user asks to "extract audio",
   "get the mp3", "strip audio from video", "rip audio", "save audio

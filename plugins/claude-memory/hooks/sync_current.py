@@ -28,7 +28,7 @@ def validate_session_id(session_id: str) -> bool:
 
 # Add path to shared utils
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "past-conversations" / "scripts"))
+sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "recall-conversations" / "scripts"))
 
 from memory_lib.db import DEFAULT_PROJECTS_DIR, get_db_connection, load_settings, setup_logging
 from memory_lib.content import extract_text_content, is_task_notification, is_teammate_message, is_tool_result

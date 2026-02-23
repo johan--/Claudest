@@ -8,19 +8,19 @@
     {
       "name": "claude-memory",
       "description": "Searchable conversation memory with full-text search",
-      "version": "0.7.5",
+      "version": "0.7.7",
       "source": "./plugins/claude-memory"
     },
     {
       "name": "claude-utilities",
       "description": "A collection of useful utilities, tools, and skills for Claude Code",
-      "version": "0.1.5",
+      "version": "0.1.7",
       "source": "./plugins/claude-utilities"
     },
     {
       "name": "claude-research",
       "description": "Cross-platform research skills: deep multi-source research across Reddit, X, YouTube, and the web, plus a standalone YouTube research toolkit",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "source": "./plugins/claude-research"
     },
     {
@@ -38,13 +38,13 @@
     {
       "name": "claude-thinking",
       "description": "Structured thinking tools: interviews, decision frameworks, and reasoning aids",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "source": "./plugins/claude-thinking"
     },
     {
       "name": "claude-content",
       "description": "Content creation skills: image generation, video compression, conversion, GIF creation, social media formatting, and audio extraction",
-      "version": "0.2.1",
+      "version": "0.2.3",
       "source": "./plugins/claude-content"
     }
   ]

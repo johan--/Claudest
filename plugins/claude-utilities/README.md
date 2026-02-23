@@ -11,7 +11,7 @@ Useful tools that don't fit in a specific plugin.
 
 ## Skills
 
-### web-to-markdown
+### convert-to-markdown
 
 Convert any webpage to clean markdown. Strips ads, navigation, popups, and cookie banners and returns just the article content. Uses [ezycopy](https://github.com/gupsammy/EzyCopy) under the hood.
 

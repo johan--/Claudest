@@ -21,7 +21,7 @@ from pathlib import Path
 
 # Add path to shared utils
 SCRIPT_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "past-conversations" / "scripts"))
+sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "recall-conversations" / "scripts"))
 
 from memory_lib.db import get_db_path, load_settings, setup_logging
 from memory_lib.formatting import format_time, get_project_key

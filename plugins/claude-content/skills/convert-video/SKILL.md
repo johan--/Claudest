@@ -1,12 +1,12 @@
 ---
-name: video-convert
+name: convert-video
 description: >
   This skill should be used when the user asks to "convert this video",
   "change format to mp4", "trim from X to Y", "cut the first X seconds",
   "speed up this video", "slow motion", "timelapse", "extract frames",
   "resize video", "scale down", "rotate video", "flip video", "remux",
-  or any general FFmpeg video manipulation not covered by video-compress,
-  video-gif, video-social, or audio-extract.
+  or any general FFmpeg video manipulation not covered by compress-video,
+  make-gif, share-social, or extract-audio.
 allowed-tools:
   - Bash(ffprobe:*)
   - Bash(ffmpeg:*)

@@ -13,7 +13,7 @@ import pytest
 
 # Load memory-context.py as a module (hyphen in filename)
 HOOKS_DIR = Path(__file__).resolve().parents[2] / "plugins" / "claude-memory" / "hooks"
-sys.path.insert(0, str(HOOKS_DIR.parent / "skills" / "past-conversations" / "scripts"))
+sys.path.insert(0, str(HOOKS_DIR.parent / "skills" / "recall-conversations" / "scripts"))
 
 memory_context_path = HOOKS_DIR / "memory-context.py"
 spec = importlib.util.spec_from_file_location("memory_context", memory_context_path)

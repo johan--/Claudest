@@ -50,12 +50,12 @@ For each candidate learning, ask in order:
 
 ## Context Gathering Tools
 
-Reuse the past-conversations tools when retrieval from prior sessions is needed.
+Reuse the recall-conversations tools when retrieval from prior sessions is needed.
 
 ### recent_chats
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/recent_chats.py --n 10
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/recent_chats.py --n 10
 ```
 
 Returns markdown-formatted sessions with exchange headers, timestamps, and project paths. Use `--format json` for structured filtering.
@@ -63,12 +63,12 @@ Returns markdown-formatted sessions with exchange headers, timestamps, and proje
 ### search_conversations
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/search_conversations.py --query "keyword"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/search_conversations.py --query "keyword"
 ```
 
 Returns matching sessions ranked by relevance (BM25 when FTS5 available). Use `--format json` for structured result parsing.
 
-For full option catalogs, load `${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/references/tool-reference.md`. Both scripts default to markdown (token-efficient for synthesis). Use `--format json` when filtering or counting sessions programmatically.
+For full option catalogs, load `${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/references/tool-reference.md`. Both scripts default to markdown (token-efficient for synthesis). Use `--format json` when filtering or counting sessions programmatically.
 
 ## Workflow
 

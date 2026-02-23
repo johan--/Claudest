@@ -31,7 +31,7 @@ This is what makes the plan-in-one-session, implement-in-the-next workflow possi
 
 ### On-demand search
 
-The past-conversations skill provides two tools: keyword search (FTS5 with BM25 ranking) and chronological session browsing. The agent invokes these during a session when it needs to look something up. It also includes a lens system for structured analysis: restore context, find knowledge gaps, run retrospectives, extract decisions.
+The recall-conversations skill provides two tools: keyword search (FTS5 with BM25 ranking) and chronological session browsing. The agent invokes these during a session when it needs to look something up. It also includes a lens system for structured analysis: restore context, find knowledge gaps, run retrospectives, extract decisions.
 
 The skill triggers naturally on phrases like "what did we discuss," "remember when we worked on," "continue where we left off," and "as I mentioned before."
 
@@ -89,10 +89,10 @@ python3 plugins/claude-memory/hooks/import_conversations.py
 python3 plugins/claude-memory/hooks/import_conversations.py --stats
 
 # Search conversations by keyword
-python3 plugins/claude-memory/skills/past-conversations/scripts/search_conversations.py --query "authentication OAuth"
+python3 plugins/claude-memory/skills/recall-conversations/scripts/search_conversations.py --query "authentication OAuth"
 
 # Browse recent sessions
-python3 plugins/claude-memory/skills/past-conversations/scripts/recent_chats.py --n 5
+python3 plugins/claude-memory/skills/recall-conversations/scripts/recent_chats.py --n 5
 ```
 
 No `--force` flag for import. Delete `~/.claude-memory/conversations.db` and re-run to reimport from scratch.

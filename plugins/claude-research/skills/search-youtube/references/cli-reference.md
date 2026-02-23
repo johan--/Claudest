@@ -47,18 +47,18 @@ Chain subcommands with standard Unix tools for multi-step workflows:
 
 ```bash
 # Search, filter with jq, extract transcripts
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py search "topic" --count 20 \
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py search "topic" --count 20 \
   | jq -r '.[].url' \
-  | python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py transcript --batch - --save -t topic
+  | python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py transcript --batch - --save -t topic
 
 # Filter search results by duration before processing
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py search "topic" --count 20 \
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py search "topic" --count 20 \
   | jq '[.[] | select(.duration > 300)]' \
   | jq -r '.[].url' \
-  | python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py transcript --batch - --save -t topic
+  | python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py transcript --batch - --save -t topic
 
 # Channel audit: get all videos, then deep metadata for each
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py channel "@someone" --limit 100 \
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py channel "@someone" --limit 100 \
   | jq -r '.[].url' \
-  | python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py metadata --batch - > channel_metadata.json
+  | python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py metadata --batch - > channel_metadata.json
 ```

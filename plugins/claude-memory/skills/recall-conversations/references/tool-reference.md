@@ -5,7 +5,7 @@
 Retrieve recent conversation sessions with all messages.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/recent_chats.py --n 3
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/recent_chats.py --n 3
 ```
 
 | Option | Effect |
@@ -26,7 +26,7 @@ Use `--verbose` for lenses that need file/commit context (restore-context, revie
 Search for sessions containing keywords using full-text search (FTS5/FTS4/LIKE cascade).
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/search_conversations.py --query "keyword"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/search_conversations.py --query "keyword"
 ```
 
 | Option | Effect |

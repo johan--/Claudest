@@ -1,5 +1,5 @@
 ---
-name: video-compress
+name: compress-video
 description: >
   This skill should be used when the user asks to "compress this video",
   "reduce file size", "make this video smaller", "optimize for web",
@@ -53,7 +53,7 @@ ffmpeg -i "$INPUT" -c:v libx264 -crf 23 -c:a copy -movflags +faststart "$OUTPUT"
 
 **2-pass mode** — calculate video bitrate first:
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/video-compress/scripts/calc_bitrate.py "$INPUT" --target-mb "$TARGET_MB"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/compress-video/scripts/calc_bitrate.py "$INPUT" --target-mb "$TARGET_MB"
 # Outputs: VIDEO_BITRATE_KBPS (integer)
 # Formula: (target_mb * 8192 / duration_s) - audio_bitrate_kbps
 # Typical audio budget: 128 kbps
@@ -78,6 +78,6 @@ After completion: input size → output size, compression ratio (e.g., "73.2 MB 
 ## Key Decisions
 
 - In CRF mode, use `-c:a copy` to preserve audio losslessly. In 2-pass mode, audio must be re-encoded (AAC 128k) because pass 1 is video-only — no audio stream is processed.
-- If input is already H.264 and the user only wants to trim or remux, recommend `video-convert` with `-c copy` instead — instant and lossless.
+- If input is already H.264 and the user only wants to trim or remux, recommend `convert-video` with `-c copy` instead — instant and lossless.
 - For H.265 output, substitute `libx265` and add `-tag:v hvc1` for Apple device compatibility.
 - Clean up `ffmpeg2pass-0.log` and `ffmpeg2pass-0.log.mbtree` after 2-pass encoding completes.

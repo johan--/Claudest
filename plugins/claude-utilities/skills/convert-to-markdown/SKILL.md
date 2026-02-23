@@ -1,5 +1,5 @@
 ---
-name: web-to-markdown
+name: convert-to-markdown
 description: >
   This skill should be used when the user asks to "convert this page to markdown",
   "extract this webpage", "save this article", "grab content from URL", "get markdown

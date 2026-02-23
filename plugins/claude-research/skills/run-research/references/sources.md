@@ -1,6 +1,6 @@
 # Source Setup Reference
 
-Quick setup guide for each data source used by deep-research.
+Quick setup guide for each data source used by run-research.
 
 ---
 
@@ -39,8 +39,8 @@ export CT0=your_ct0_token
 ## YouTube — `yt-dlp` + `yt_research.py`
 
 1. Install yt-dlp: `brew install yt-dlp` or `pip install yt-dlp`
-2. The `yt_research.py` script is bundled with the claudest `youtube-research` plugin:
-   `~/.claude/plugins/cache/claudest/claude-utilities/0.1.4/skills/youtube-research/scripts/yt_research.py`
+2. The `yt_research.py` script is bundled with the claudest `search-youtube` plugin:
+   `~/.claude/plugins/cache/claudest/claude-utilities/0.1.4/skills/search-youtube/scripts/yt_research.py`
 3. Verify: `yt-dlp --version`
 
 ---

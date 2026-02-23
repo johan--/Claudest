@@ -1,5 +1,5 @@
 ---
-name: skill-creator
+name: create-skill
 description: >
   This skill should be used when the user asks to "create a skill", "make a command",
   "generate a prompt", "write a slash command", "build a Claude extension",
@@ -24,7 +24,7 @@ Capture any frontmatter fields or options not already listed in `references/fron
 
 ## Phase 1: Understand Requirements
 
-Parse `$ARGUMENTS` for type hint. User is often unclear and uninformed on best practices of skill development. Continue to interview and help user using `/thinking-partner` skill, if available.
+Parse `$ARGUMENTS` for type hint. User is often unclear and uninformed on best practices of skill development. Continue to interview and help user using `/brainstorm` skill, if available.
 
 Gather requirements:
 1. **Primary objective** — What should this do?
@@ -46,7 +46,7 @@ Apply these principles throughout generation: use imperative voice and terse phr
 
 ### Step 2 — Write frontmatter
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/references/frontmatter-options.md` for the full field catalog, description patterns, tool selection framework, and execution modifiers.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/create-skill/references/frontmatter-options.md` for the full field catalog, description patterns, tool selection framework, and execution modifiers.
 
 **Intensional over extensional — apply to all generated content.** State the rule directly with its reasoning rather than listing examples that imply the rule. An intensional rule ("quoted phrases must be verbatim user speech *because* routing matches on literal tokens") generalizes to every input the skill will encounter. An extensional approach requires the reader to reverse-engineer the rule — two reasoning hops instead of one, covering only the shape of those specific examples. Since this skill generates instructions that will themselves guide further generation, the quality of reasoning propagates.
 
@@ -86,7 +86,7 @@ Brief overview (1-2 sentences).
 
 ### Step 4 — Script opportunity scan
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/references/script-patterns.md` and apply the five signal patterns to every workflow step in the skill being generated:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/create-skill/references/script-patterns.md` and apply the five signal patterns to every workflow step in the skill being generated:
 
 | Signal | Question | If yes → |
 |--------|----------|----------|
@@ -127,7 +127,7 @@ For each workflow step, ask: "Do we already have this?"
 When generating a new skill directory (not editing an existing single file):
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/scripts/validate_skill.py <skill-directory> --output json
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/create-skill/scripts/validate_skill.py <skill-directory> --output json
 ```
 
 Exit 0 = proceed to Phase 3. Exit 1 = parse the `errors` array; each entry has `field`, `message`, `severity`. Resolve all `critical` and `major` items before writing to disk.
@@ -186,7 +186,7 @@ Score the generated skill/command:
 **Initialize a new skill — invoke at Step 1 when creating a new skill directory (not when editing an existing file):**
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/scripts/init_skill.py <name> --path <dir> [--resources scripts,references,assets] [--examples]
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/create-skill/scripts/init_skill.py <name> --path <dir> [--resources scripts,references,assets] [--examples]
 ```
 
 Exit 0 = directory created, proceed to Step 2. Exit 1 = naming collision; ask user whether to overwrite or rename.
@@ -194,7 +194,7 @@ Exit 0 = directory created, proceed to Step 2. Exit 1 = naming collision; ask us
 **Validate a skill — invoke at Step 6 before delivering:**
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/scripts/validate_skill.py <skill-directory> --output json
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/create-skill/scripts/validate_skill.py <skill-directory> --output json
 ```
 
 Exit 0 = proceed to Phase 3. Exit 1 = parse `errors` array; resolve all `critical` and `major` items before writing.
@@ -202,7 +202,7 @@ Exit 0 = proceed to Phase 3. Exit 1 = parse `errors` array; resolve all `critica
 **Package for distribution — invoke only when user explicitly requests a distributable file:**
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/skill-creator/scripts/package_skill.py <skill-directory> [output-dir]
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/create-skill/scripts/package_skill.py <skill-directory> [output-dir]
 ```
 
 Exit 0 = `.skill` file created at output path. Exit 1 = validation failed; read stdout for details.

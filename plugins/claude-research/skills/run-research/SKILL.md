@@ -1,13 +1,13 @@
 ---
-name: deep-research
+name: run-research
 description: >
   This skill should be used when the user asks to "research a topic",
-  "deep-research", "last30", "what's happening with X", "what are people
+  "run-research", "last30", "what's happening with X", "what are people
   saying about X", "find the best X", "X prompts", "latest on X", "X news",
   "what are people recommending for X", "research X for me", or wants to
   know what's trending, discussed, or debated about any subject in recent
   weeks.
-argument-hint: 'deep-research AI video tools, deep-research best project management tools'
+argument-hint: 'run-research AI video tools, run-research best project management tools'
 user-invocable: true
 allowed-tools:
   - Bash(which:*)
@@ -20,7 +20,7 @@ allowed-tools:
   - WebSearch
 ---
 
-# deep-research
+# run-research
 
 ---
 
@@ -117,13 +117,13 @@ Track: post count, total likes, total reposts, top @handles by engagement.
 ### YouTube (if `YTDLP=ok`)
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py" search "{TOPIC}" --count {YT_COUNT} --after $(date -v-{DAYS}d +%Y%m%d 2>/dev/null || date -d "{DAYS} days ago" +%Y%m%d)
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py" search "{TOPIC}" --count {YT_COUNT} --after $(date -v-{DAYS}d +%Y%m%d 2>/dev/null || date -d "{DAYS} days ago" +%Y%m%d)
 ```
 
 For `deep` depth, or when ≥1 video looks highly relevant (based on title + view count): fetch transcript of the top 1-2 results:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py" transcript "{VIDEO_URL}"
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py" transcript "{VIDEO_URL}"
 ```
 
 Transcripts are dense signal — read them fully and extract specific insights, not summaries.

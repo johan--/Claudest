@@ -1,5 +1,5 @@
 ---
-name: video-social
+name: share-social
 description: >
   This skill should be used when the user asks to "optimize for Instagram",
   "YouTube Shorts format", "make it 9:16", "square video", "TikTok format",

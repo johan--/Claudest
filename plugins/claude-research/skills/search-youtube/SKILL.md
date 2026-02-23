@@ -1,5 +1,5 @@
 ---
-name: youtube-research
+name: search-youtube
 description: >
   This skill should be used when the user asks to "search YouTube", "find videos about",
   "get a transcript", "download subtitles", "extract audio from YouTube", "scan a channel",
@@ -25,9 +25,9 @@ allowed-tools:
 
 Multi-platform video research toolkit. Operates in two modes: toolkit (individual operations)
 and research (autonomous search-to-synthesis pipeline). All operations use a single CLI at
-`${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py`.
+`${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py`.
 
-Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py <subcommand> --help`
+Run `python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py <subcommand> --help`
 for full flag reference on any subcommand.
 
 ## Toolkit Mode
@@ -40,7 +40,7 @@ a specific action (transcript, search, metadata, audio, channel scan).
 Find videos matching a query. Returns structured results with metadata.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py search "<query>" --count 10
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py search "<query>" --count 10
 ```
 
 Add filters to narrow results: `--min-duration 600` (seconds), `--after 20250101` (YYYYMMDD),
@@ -52,7 +52,7 @@ automatically to compensate. Output is JSON by default; add `-f text` for human-
 Download and clean subtitles to LLM-ready text.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py transcript "<url>"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py transcript "<url>"
 ```
 
 Outputs clean prose to stdout by default. Add `--timestamps` for SRT with timing cues.
@@ -65,7 +65,7 @@ auto-generated. Exit 4 if no subtitles exist in the requested language.
 Extract full video information without downloading.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py metadata "<url>"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py metadata "<url>"
 ```
 
 Returns: title, description, channel, duration, chapters, view/like counts, tags, available
@@ -76,7 +76,7 @@ subtitle languages, thumbnail URL. Add `--playlist` for playlist entry listings.
 Download audio in the requested format.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py audio "<url>" --audio-format mp3 -t <topic>
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py audio "<url>" --audio-format mp3 -t <topic>
 ```
 
 Saves to `~/youtube-research/<topic>/audio/`. Supported formats: mp3, m4a, opus, wav.
@@ -87,7 +87,7 @@ Always saves to disk (audio cannot go to stdout). Prints the file path on succes
 Scan a channel's content.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py channel "<url-or-@handle>" --limit 20
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py channel "<url-or-@handle>" --limit 20
 ```
 
 Supports tabs: `--tab videos` (default), `shorts`, `streams`, `playlists`. Filter with
@@ -99,7 +99,7 @@ Any subcommand except `search` accepts `--batch <file>` (or `--batch -` for stdi
 process multiple URLs. One URL per line; lines starting with `#` or `;` are skipped.
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/youtube-research/scripts/yt_research.py transcript --batch urls.txt --save -t <topic>
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/search-youtube/scripts/yt_research.py transcript --batch urls.txt --save -t <topic>
 ```
 
 ## Research Mode

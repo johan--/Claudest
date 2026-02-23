@@ -1,5 +1,5 @@
 ---
-name: video-gif
+name: make-gif
 description: >
   This skill should be used when the user asks to "make a GIF", "convert
   to GIF", "create a GIF from this video", "export as GIF", "turn this

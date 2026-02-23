@@ -15,7 +15,7 @@ Some of the best thinking happens in conversation, but unstructured conversation
 
 ## Skills
 
-### thinking-partner
+### brainstorm
 
 In-depth interview to clarify, stress-test, and articulate ideas. Calibrates questioning style to the domain — adversarial for strategy, gentle for personal decisions, Socratic for abstract topics. Produces a synthesis document (spec, brief, decision doc, reflection) with key themes, decisions, and open questions. No raw Q&A transcript — user quotes are woven into the synthesis where they're apt.
 

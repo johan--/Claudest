@@ -1,5 +1,5 @@
 ---
-name: skill-repair
+name: repair-skill
 description: >
   This skill should be used when the user asks to "repair a skill", "audit a skill",
   "fix my skill", "improve an existing skill", "review skill quality", "check if my skill
@@ -11,7 +11,7 @@ argument-hint: "<path-to-skill-directory-or-SKILL.md>"
 
 # Skill Repair
 
-Audit and improve an existing skill against a gold standard. Unlike skill-creator (which
+Audit and improve an existing skill against a gold standard. Unlike create-skill (which
 generates from scratch), this skill diagnoses violations *and* identifies gaps — what is
 broken, what is missing, and what would raise quality. The output is a structured
 improvement plan covering all dimensions.
@@ -28,10 +28,10 @@ If the path is missing or ambiguous, use AskUserQuestion to resolve before proce
 
 **Load both reference files before Phase 2:**
 
-1. `${CLAUDE_PLUGIN_ROOT}/skills/skill-repair/references/skill-anatomy.md` — gold standard for
+1. `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/skill-anatomy.md` — gold standard for
    correct anatomy, three-level loading model, directory type definitions, degrees of
    freedom, naming conventions, body conventions. Required for Dimensions 5, 6, and 7.
-2. `${CLAUDE_PLUGIN_ROOT}/skills/skill-repair/references/frontmatter-options.md` — complete
+2. `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/frontmatter-options.md` — complete
    frontmatter field catalog, valid values, tool list, tool selection framework.
    Required for Dimensions 1 and 2.
 
@@ -136,7 +136,7 @@ of one, covering only the shape of that example.
 
 ### Dimension 4 — Agentic vs Deterministic Split
 
-**Load `${CLAUDE_PLUGIN_ROOT}/skills/skill-repair/references/script-patterns.md` before auditing this dimension.** It contains
+**Load `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/script-patterns.md` before auditing this dimension.** It contains
 the five signal patterns for recognizing a script candidate, CLI design conventions,
 common archetypes (init, validate, transform, package, query), and the delegation
 pattern for using `create-cli` to design the interface.
@@ -341,6 +341,6 @@ and the validation checklist passes.
 
 ## Validation
 
-After applying all improvements, load `${CLAUDE_PLUGIN_ROOT}/skills/skill-repair/references/quality-checklist.md`
+After applying all improvements, load `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/quality-checklist.md`
 and run the quality standards check followed by the item-by-item validation checklist.
 Report any failing items before delivering final results.

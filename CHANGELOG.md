@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-02-23
+## [Unreleased]
+
+## [2026-02-23]
+
+### Changed
+- Rename all skills and commands to verb-first convention across 5 plugins: recall-conversations, manage-memory, convert-to-markdown, brainstorm, run-research, search-youtube, generate-image, compress-video, convert-video, make-gif, share-social, extract-audio
 
 ### Added
 - Add YouTube research skill with yt-dlp integration to claude-utilities

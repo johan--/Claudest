@@ -29,19 +29,19 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 
 | Plugin | Version | Skills |
 |--------|---------|--------|
-| [claude-memory](#claude-memory) | `0.7.5` | past-conversations · extract-learnings |
-| [claude-research](#claude-research) | `0.1.0` | deep-research · youtube-research |
+| [claude-memory](#claude-memory) | `0.7.6` | recall-conversations · extract-learnings |
+| [claude-research](#claude-research) | `0.1.1` | run-research · search-youtube |
 | [claude-coding](#claude-coding) | `0.1.8` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog |
 | [claude-skills](#claude-skills) | `0.1.4` | create-skill · repair-skill · improve-skill |
-| [claude-thinking](#claude-thinking) | `0.1.2` | thinking-partner |
-| [claude-content](#claude-content) | `0.2.1` | image-generation · video-compress · video-convert · video-gif · video-social · audio-extract |
-| [claude-utilities](#claude-utilities) | `0.1.5` | web-to-markdown |
+| [claude-thinking](#claude-thinking) | `0.1.3` | brainstorm |
+| [claude-content](#claude-content) | `0.2.2` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
+| [claude-utilities](#claude-utilities) | `0.1.6` | convert-to-markdown |
 
 ---
 
 <a id="claude-memory"></a>
 
-### 🧠 claude-memory &nbsp; ![v0.7.5](https://img.shields.io/badge/v0.7.5-blue?style=flat-square)
+### 🧠 claude-memory &nbsp; ![v0.7.6](https://img.shields.io/badge/v0.7.6-blue?style=flat-square)
 
 Conversation memory for Claude Code. Recall what happened yesterday, last week, or three weeks ago.
 
@@ -51,7 +51,7 @@ That's what claude-memory provides. It stores every session in a SQLite database
 
 First, automatic context injection. On every session start, a hook queries recent sessions and injects the most recent meaningful one into context. The agent already knows what you worked on last time before you say a word. This is what makes the plan-in-one-session, implement-in-the-next workflow possible.
 
-Second, on-demand search. The `past-conversations` skill lets the agent (or you) search conversation history by keywords, browse recent sessions, or run structured analyses like retrospectives and gap-finding. Ask "what did we decide about the API design?" and the agent searches your history. The search works because the agent constructs the queries, not you — it extracts keywords, sends them to FTS5, and iterates if the first results aren't good enough. No vector database, no embedding pipeline, no external dependencies. Just SQLite and Python's standard library.
+Second, on-demand search. The `recall-conversations` skill lets the agent (or you) search conversation history by keywords, browse recent sessions, or run structured analyses like retrospectives and gap-finding. Ask "what did we decide about the API design?" and the agent searches your history. The search works because the agent constructs the queries, not you — it extracts keywords, sends them to FTS5, and iterates if the first results aren't good enough. No vector database, no embedding pipeline, no external dependencies. Just SQLite and Python's standard library.
 
 The `extract-learnings` skill is a route from recall memory into archival memory. It reads past conversations, identifies non-obvious insights and gotchas worth preserving, and proposes placing them at the right layer in the memory hierarchy (global CLAUDE.md, repo CLAUDE.md, MEMORY.md, or topic files) with diffs and rationale. Learnings that would otherwise evaporate when context resets get distilled into persistent knowledge.
 
@@ -65,15 +65,15 @@ For the full story behind the architecture: [What I Learned Building a Memory Sy
 
 <a id="claude-research"></a>
 
-### 🔍 claude-research &nbsp; ![v0.1.0](https://img.shields.io/badge/v0.1.0-blue?style=flat-square)
+### 🔍 claude-research &nbsp; ![v0.1.1](https://img.shields.io/badge/v0.1.1-blue?style=flat-square)
 
 Cross-platform research skills for Claude Code. Two complementary tools: a multi-source deep research pipeline and a standalone YouTube research toolkit.
 
-`deep-research` is an autonomous research agent that queries Reddit, X/Twitter, YouTube, and the web simultaneously, then synthesizes what it finds. It classifies your intent — recommendations, news, prompting techniques, or general exploration — and shapes the queries accordingly. Each source runs in full before synthesis begins. Results are weighted by engagement (upvotes, likes, reposts) because engagement is aggregate human signal. A stats block at the end shows exactly what was searched: thread counts, upvote totals, video counts, transcripts read. Every cited claim traces back to a real source — @handles, subreddit names, channel names — never raw URLs.
+`run-research` is an autonomous research agent that queries Reddit, X/Twitter, YouTube, and the web simultaneously, then synthesizes what it finds. It classifies your intent — recommendations, news, prompting techniques, or general exploration — and shapes the queries accordingly. Each source runs in full before synthesis begins. Results are weighted by engagement (upvotes, likes, reposts) because engagement is aggregate human signal. A stats block at the end shows exactly what was searched: thread counts, upvote totals, video counts, transcripts read. Every cited claim traces back to a real source — @handles, subreddit names, channel names — never raw URLs.
 
 Sources are detected at runtime. If reddit-cli, bird, or brave-cli aren't installed, the pipeline skips them silently and surfaces setup instructions at the end of the report. The web search falls back to Claude's native `WebSearch` when brave-cli isn't configured, so you always get results from at least one source.
 
-`youtube-research` is a YouTube research toolkit built on `yt-dlp`. In toolkit mode, it exposes individual operations: search with filters (minimum duration, date range, view count), transcript extraction with language selection and optional timestamps, full metadata without downloading, audio in any format (mp3, m4a, opus, wav), channel scanning by tab (videos, shorts, streams, playlists), and batch processing from a URL list. In research mode, it runs as an autonomous multi-step pipeline — search, evaluate, fetch metadata, download transcripts, synthesize — and produces a structured report with source attribution, points of agreement, contradictions, and gaps in coverage.
+`search-youtube` is a YouTube research toolkit built on `yt-dlp`. In toolkit mode, it exposes individual operations: search with filters (minimum duration, date range, view count), transcript extraction with language selection and optional timestamps, full metadata without downloading, audio in any format (mp3, m4a, opus, wav), channel scanning by tab (videos, shorts, streams, playlists), and batch processing from a URL list. In research mode, it runs as an autonomous multi-step pipeline — search, evaluate, fetch metadata, download transcripts, synthesize — and produces a structured report with source attribution, points of agreement, contradictions, and gaps in coverage.
 
 ```bash
 # Prerequisites — install only what you need, each source is optional
@@ -140,13 +140,13 @@ All three skills share a `references/` library: a skill anatomy gold standard, a
 
 <a id="claude-thinking"></a>
 
-### 🤔 claude-thinking &nbsp; ![v0.1.2](https://img.shields.io/badge/v0.1.2-blue?style=flat-square)
+### 🤔 claude-thinking &nbsp; ![v0.1.3](https://img.shields.io/badge/v0.1.3-blue?style=flat-square)
 
 Structured thinking tools for Claude Code. Skills that use dialogue to help you clarify, stress-test, and articulate ideas, then produce a written artifact.
 
 Some of the best thinking happens in conversation, but unstructured conversation wanders. These skills provide just enough framework to keep the dialogue productive: domain-calibrated questioning intensity, saturation detection so it knows when to stop, and structured output so the results are reusable.
 
-`thinking-partner` conducts an in-depth interview calibrated to the domain — adversarial probing for strategy, gentle exploration for personal decisions, Socratic depth for abstract topics. Detects saturation after 4+ rounds of recurring themes and produces a synthesis document (spec, brief, decision doc, reflection) with key themes, decisions, open questions, and constraints. User quotes are woven into the synthesis where apt, never dumped as raw transcript.
+`brainstorm` conducts an in-depth interview calibrated to the domain — adversarial probing for strategy, gentle exploration for personal decisions, Socratic depth for abstract topics. Detects saturation after 4+ rounds of recurring themes and produces a synthesis document (spec, brief, decision doc, reflection) with key themes, decisions, open questions, and constraints. User quotes are woven into the synthesis where apt, never dumped as raw transcript.
 
 ```
 /plugin install claude-thinking@claudest
@@ -156,23 +156,23 @@ Some of the best thinking happens in conversation, but unstructured conversation
 
 <a id="claude-content"></a>
 
-### 🎬 claude-content &nbsp; ![v0.2.1](https://img.shields.io/badge/v0.2.1-blue?style=flat-square)
+### 🎬 claude-content &nbsp; ![v0.2.2](https://img.shields.io/badge/v0.2.2-blue?style=flat-square)
 
 Content creation and processing tools for Claude Code. Six skills covering image generation and the full video/audio manipulation workflow.
 
 Most content tasks involve the same small set of operations repeated across projects: compress this for web, convert to a different format, make it fit Instagram, extract the audio, generate a thumbnail. The individual FFmpeg commands are tedious to remember and easy to get wrong — the right CRF for H.265, the palette generation pipeline for GIF quality, the aspect ratio math for Reels. These skills encode the correct defaults so you don't have to look them up.
 
-`image-generation` calls Google's Gemini Pro Image API for text-to-image, image-to-image editing, and multi-reference composition. Give it a description and it generates the image. Give it a source image and editing instructions and it modifies it. Give it multiple reference images and a prompt and it composes them. Requires `GEMINI_API_KEY` and `uv`.
+`generate-image` calls Google's Gemini Pro Image API for text-to-image, image-to-image editing, and multi-reference composition. Give it a description and it generates the image. Give it a source image and editing instructions and it modifies it. Give it multiple reference images and a prompt and it composes them. Requires `GEMINI_API_KEY` and `uv`.
 
-`video-compress` profiles the source first, then applies quality-based (CRF) encoding to hit a visual quality target or size-based (2-pass) encoding to hit a file size target — whichever the workflow needs.
+`compress-video` profiles the source first, then applies quality-based (CRF) encoding to hit a visual quality target or size-based (2-pass) encoding to hit a file size target — whichever the workflow needs.
 
-`video-convert` is the general-purpose manipulation skill: format conversion, trim, speed adjustment, slow motion, timelapse, frame extraction, resize, rotate, flip, remux. Multi-operation requests are chained into a single ffmpeg invocation — no intermediate files, no quality loss from repeated encode passes.
+`convert-video` is the general-purpose manipulation skill: format conversion, trim, speed adjustment, slow motion, timelapse, frame extraction, resize, rotate, flip, remux. Multi-operation requests are chained into a single ffmpeg invocation — no intermediate files, no quality loss from repeated encode passes.
 
-`video-gif` uses the mandatory 2-pass palette workflow: `palettegen` builds an optimal 256-color palette from the clip's actual colors, then `paletteuse` renders with it. Single-pass GIF encoding produces banding and color artifacts. This doesn't.
+`make-gif` uses the mandatory 2-pass palette workflow: `palettegen` builds an optimal 256-color palette from the clip's actual colors, then `paletteuse` renders with it. Single-pass GIF encoding produces banding and color artifacts. This doesn't.
 
-`video-social` prepares video for platform-specific upload requirements: 9:16 for Shorts/Reels/TikTok, 1:1 for square posts, platform bitrate targets, and correct container settings. Presets for Instagram, YouTube Shorts, TikTok, Twitter, Facebook, and LinkedIn.
+`share-social` prepares video for platform-specific upload requirements: 9:16 for Shorts/Reels/TikTok, 1:1 for square posts, platform bitrate targets, and correct container settings. Presets for Instagram, YouTube Shorts, TikTok, Twitter, Facebook, and LinkedIn.
 
-`audio-extract` rips the audio track from any video with format selection built in: FLAC for lossless archival, MP3 VBR for transparent compression, AAC for maximum compatibility.
+`extract-audio` rips the audio track from any video with format selection built in: FLAC for lossless archival, MP3 VBR for transparent compression, AAC for maximum compatibility.
 
 Requires `ffmpeg` and `ffprobe`. Image generation additionally requires `GEMINI_API_KEY` and `uv`.
 
@@ -184,11 +184,11 @@ Requires `ffmpeg` and `ffprobe`. Image generation additionally requires `GEMINI_
 
 <a id="claude-utilities"></a>
 
-### 🔧 claude-utilities &nbsp; ![v0.1.5](https://img.shields.io/badge/v0.1.5-blue?style=flat-square)
+### 🔧 claude-utilities &nbsp; ![v0.1.6](https://img.shields.io/badge/v0.1.6-blue?style=flat-square)
 
 Useful tools that don't fit in a specific plugin.
 
-`web-to-markdown` converts any webpage to clean markdown, stripping ads, navigation, popups, and cookie banners. Uses [ezycopy](https://github.com/gupsammy/EzyCopy) under the hood. Triggers on "convert this page to markdown", "extract this webpage", "save this article", "grab content from URL", "scrape this page".
+`convert-to-markdown` converts any webpage to clean markdown, stripping ads, navigation, popups, and cookie banners. Uses [ezycopy](https://github.com/gupsammy/EzyCopy) under the hood. Triggers on "convert this page to markdown", "extract this webpage", "save this article", "grab content from URL", "scrape this page".
 
 ```bash
 # Prerequisite

@@ -6,7 +6,7 @@ argument-hint: "<subcommand: sync|search|stats|import>"
 
 # Memory Management Command
 
-You are handling the `/claude-memory` command for managing the conversation memory database.
+You are handling the `/manage-memory` command for managing the conversation memory database.
 
 ## Available Subcommands
 
@@ -37,7 +37,7 @@ Then report the result to the user.
 Search conversations using full-text search:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/search_conversations.py" --query "<query>" --max-results 5
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/search_conversations.py" --query "<query>" --max-results 5
 ```
 
 Display the results in a readable format.

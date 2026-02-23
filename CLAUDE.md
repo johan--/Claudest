@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claudest is a curated Claude Code plugin marketplace containing five plugins: **claude-memory** (conversation memory with full-text search and context injection), **claude-utilities** (web-to-markdown via ezycopy), **claude-skills** (skill authoring and repair), **claude-coding** (git workflows and CLAUDE.md maintenance), and **claude-thinking** (structured thinking tools). There is no build system or package manager — plugin runtime is Python 3.7+ stdlib-only. Tests use pytest with hypothesis (dev dependencies only).
+Claudest is a curated Claude Code plugin marketplace containing five plugins: **claude-memory** (conversation memory with full-text search and context injection), **claude-utilities** (convert-to-markdown via ezycopy), **claude-skills** (skill authoring and repair), **claude-coding** (git workflows and CLAUDE.md maintenance), and **claude-thinking** (structured thinking tools). There is no build system or package manager — plugin runtime is Python 3.7+ stdlib-only. Tests use pytest with hypothesis (dev dependencies only).
 
 ## Development Commands
 
@@ -42,7 +42,7 @@ Tables: `projects`, `sessions`, `branches`, `messages`, `branch_messages`, `impo
 
 ### Shared Code
 
-`plugins/claude-memory/skills/past-conversations/scripts/memory_lib/` is the shared utility package used by all hooks and skill scripts. It is split into four focused modules: `db.py` (database connection, schema, settings, logging), `content.py` (message content extraction and tool detection), `parsing.py` (JSONL parsing, branch detection via UUID parent chain analysis, metadata extraction), and `formatting.py` (session formatting, time/path utilities). The `extract_text_content()` function in `content.py` returns a 4-tuple `(text, has_tool_use, has_thinking, tool_summary_json)` — tool markers are never materialized into stored text; instead tool counts are stored as compact JSON in `messages.tool_summary`.
+`plugins/claude-memory/skills/recall-conversations/scripts/memory_lib/` is the shared utility package used by all hooks and skill scripts. It is split into four focused modules: `db.py` (database connection, schema, settings, logging), `content.py` (message content extraction and tool detection), `parsing.py` (JSONL parsing, branch detection via UUID parent chain analysis, metadata extraction), and `formatting.py` (session formatting, time/path utilities). The `extract_text_content()` function in `content.py` returns a 4-tuple `(text, has_tool_use, has_thinking, tool_summary_json)` — tool markers are never materialized into stored text; instead tool counts are stored as compact JSON in `messages.tool_summary`.
 
 ### Session Selection Algorithm
 

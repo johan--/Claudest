@@ -1,5 +1,5 @@
 ---
-name: past-conversations
+name: recall-conversations
 description: >
   This skill should be used when the user asks to recall, search, or continue
   past conversations. Triggers on "what did we discuss", "continue where we
@@ -21,12 +21,12 @@ Two scripts retrieve data. For full option catalogs, load `references/tool-refer
 
 **recent_chats.py** — retrieve recent sessions:
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/recent_chats.py --n 3
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/recent_chats.py --n 3
 ```
 
 **search_conversations.py** — keyword search across all sessions:
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/past-conversations/scripts/search_conversations.py --query "keyword"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/search_conversations.py --query "keyword"
 ```
 
 ---

@@ -1,5 +1,5 @@
 ---
-name: image-generation
+name: generate-image
 description: >
   This skill should be used when the user asks to "generate an image", "create a
   picture", "make me a logo", "edit this image", "remove the background", "change the
@@ -92,22 +92,22 @@ One unified script handles all modes: t2i, i2i, and multi-reference composition.
 
 ```bash
 # Text-to-image (t2i)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/image-generation/scripts/generate.py --prompt "A serene mountain lake at dawn" --output landscape.png
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A serene mountain lake at dawn" --output landscape.png
 
 # Image-to-image editing (i2i)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/image-generation/scripts/generate.py --prompt "Make it sunset colors" --input photo.png --output edited.png
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Make it sunset colors" --input photo.png --output edited.png
 
 # Multi-reference composition (up to 14 images)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/image-generation/scripts/generate.py --prompt "Combine the cat from image 1 with the background from image 2" --input cat.png --input background.png --output composite.png
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Combine the cat from image 1 with the background from image 2" --input cat.png --input background.png --output composite.png
 
 # With options
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/image-generation/scripts/generate.py --prompt "Logo for 'Acme Corp'" --output logo.png --aspect 1:1 --resolution 2K
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Logo for 'Acme Corp'" --output logo.png --aspect 1:1 --resolution 2K
 
 # With Google Search grounding
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/image-generation/scripts/generate.py --prompt "Current weather in Tokyo visualized" --output weather.png --grounding
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Current weather in Tokyo visualized" --output weather.png --grounding
 
 # Batch generation (up to 4 images, 2 parallel requests)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/image-generation/scripts/generate.py --prompt "A cat in different poses" --output cat.png --batch 4
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A cat in different poses" --output cat.png --batch 4
 # Outputs: cat-1.png, cat-2.png, cat-3.png, cat-4.png
 ```
 
