@@ -113,13 +113,12 @@ using YouTube as a source. This is an autonomous multi-step pipeline:
    from a domain expert outweighs five 3-minute overviews), channel authority (subject-matter
    experts and recognized educators over generic aggregators), recency (prefer recent content
    unless the topic is stable), and view count as a tiebreaker (higher views signal broader
-   validation, not necessarily quality)
+   validation, not necessarily quality) %% claude: this doesn't give good results always. 30 minute long videos, often are not experts, often for new technologies like open claw channel authority and viewer count often is average knowledge, vs smaller accounts often do better %%
 3. Extract metadata for selected videos to confirm relevance (check descriptions, chapters)
 4. Download transcripts for the final selection
 5. Read each transcript and synthesize findings into a report
 
-Use `WebSearch` to cross-reference claims or fill gaps when YouTube sources disagree or
-leave questions unanswered. Use `Task` to spawn parallel transcript downloads when
+Use `WebSearch` or brave-cli to cross-reference claims or fill gaps when YouTube sources disagree or leave questions unanswered. Use `Task` to spawn parallel transcript downloads when
 processing more than 3 videos.
 
 ### Research Report Format
