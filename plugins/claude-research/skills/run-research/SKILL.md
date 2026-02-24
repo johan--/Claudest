@@ -11,6 +11,7 @@ argument-hint: 'run-research AI video tools, run-research best project managemen
 user-invocable: true
 allowed-tools:
   - Bash(which:*)
+  - Bash(curl:*)
   - Bash(reddit-cli:*)
   - Bash(bird:*)
   - Bash(python3:*)
@@ -77,9 +78,31 @@ which yt-dlp     2>/dev/null && echo "YTDLP=ok"  || echo "YTDLP=missing"
 (which brave-cli >/dev/null 2>&1 && ([ -n "$BRAVE_API_KEY" ] || grep -q "BRAVE_API_KEY" ~/.secrets 2>/dev/null)) && echo "BRAVE=ok" || echo "BRAVE=missing"
 ```
 
-Record `REDDIT`, `BIRD`, `YTDLP`, `BRAVE`. Skip any source marked `missing` without error or prompting. Always run at least web search.
+Record `REDDIT`, `BIRD`, `YTDLP`, `BRAVE`. Always run at least web search.
 
-If any source is `missing`, read `references/sources.md` and surface the setup instructions to the user after research completes.
+### Install missing tools (reddit-cli / brave-cli only)
+
+If `REDDIT=missing` or `BRAVE=missing`, use `AskUserQuestion` to offer installation before proceeding. Tailor the question to which tools are missing:
+
+- Only `REDDIT=missing` → "reddit-cli is not installed. Install it now so Reddit results are included?"
+- Only `BRAVE=missing` → "brave-cli is not installed. Install it now for better web search coverage?"
+- Both missing → ask once, offering to install both.
+
+If the user approves, run the installer(s) for the missing tools:
+
+```bash
+# reddit-cli
+curl -fsSL https://raw.githubusercontent.com/gupsammy/reddit-cli/main/install.sh | bash
+
+# brave-cli
+curl -fsSL https://raw.githubusercontent.com/gupsammy/brave-cli/main/install.sh | sh
+```
+
+After installing, re-run the detection block to confirm `REDDIT=ok` / `BRAVE=ok` before proceeding.
+
+Skip any source still marked `missing` without error or prompting.
+
+If `BIRD=missing` or `YTDLP=missing`, read `references/sources.md` and surface the setup instructions to the user after research completes.
 
 ---
 

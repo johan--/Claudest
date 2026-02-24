@@ -16,7 +16,7 @@ Requires a free Reddit API app (script type, read-only).
    ```
 3. Verify: `reddit-cli auth`
 
-Install: `pip install reddit-cli` (from `~/repos/myrepos/reddit-cli`)
+Install: `curl -fsSL https://raw.githubusercontent.com/gupsammy/reddit-cli/main/install.sh | bash`
 
 ---
 
@@ -45,17 +45,15 @@ export CT0=your_ct0_token
 
 ---
 
-## Web Search — brave-search + brave-cli (placeholder)
+## Web Search — `brave-cli`
 
-**Current** (brave-search skill):
-- Requires `BRAVE_API_KEY` in `~/.secrets`
-- Get key: https://api.search.brave.com
-- Add: `export BRAVE_API_KEY="your_key"` to `~/.secrets`
-- Script: `~/.claude/skills/brave-search/scripts/search.mjs`
+Requires a `BRAVE_API_KEY` from https://api.search.brave.com (free tier available).
 
-**Planned** (brave-cli — in progress):
-- Will be a standalone binary at e.g. `~/repos/myrepos/brave-cli`
-- Same interface as `reddit-cli`: `brave-cli search "<query>" --output json`
-- When built, update the PLACEHOLDER comment in `SKILL.md` Step 2 → Web Search
+1. Install: `curl -fsSL https://raw.githubusercontent.com/gupsammy/brave-cli/main/install.sh | sh`
+2. Add API key to `~/.secrets`:
+   ```bash
+   export BRAVE_API_KEY="your_key"
+   ```
+3. Verify: `brave-cli search "test" -n 1 --output json`
 
-**Fallback**: Claude's native `WebSearch` tool is always available when `BRAVE_API_KEY` is not set.
+**Fallback**: Claude's native `WebSearch` tool is always available when `brave-cli` is not installed or `BRAVE_API_KEY` is not set.
