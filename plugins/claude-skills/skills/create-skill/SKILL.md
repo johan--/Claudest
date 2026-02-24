@@ -167,7 +167,22 @@ Summarize what was created:
 - How to invoke/trigger
 - Suggested test scenario
 
-## Phase 4: Evaluate
+## Phase 4: Structural Lint
+
+After writing the skill to disk, invoke the skill-lint agent to run a structural audit:
+
+```
+Use Task tool with subagent_type=claude-skills:skill-lint:
+"Lint the skill at <path-to-skill-directory>. Auto-apply critical and major fixes, report
+minor findings for user decision."
+```
+
+Wait for the agent to complete. If it auto-applied fixes, note them in the Phase 5 summary.
+If it reports minor findings, include them in the evaluation output for the user to decide.
+
+Proceed to Phase 5 when the lint agent returns.
+
+## Phase 5: Evaluate
 
 Score the generated skill/command:
 

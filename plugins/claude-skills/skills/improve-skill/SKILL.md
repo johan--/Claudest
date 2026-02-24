@@ -177,3 +177,20 @@ that exist.
 
 Phase 4 is complete when all confirmed items are applied, the explanation is delivered, and
 the validation pass finds no integration failures.
+
+## Phase 5: Structural Lint
+
+After applying effectiveness improvements, invoke the skill-lint agent for a structural
+quality pass:
+
+```
+Use Task tool with subagent_type=claude-skills:skill-lint:
+"Lint the skill at <path-to-skill-directory>. Auto-apply critical and major fixes, report
+minor findings for user decision."
+```
+
+Wait for the agent to complete. If it auto-applied structural fixes, note them alongside
+the effectiveness changes from Phase 4. If it reports minor findings, present them to the
+user.
+
+Phase 5 is complete when the lint agent returns and any user-selected minor fixes are applied.
