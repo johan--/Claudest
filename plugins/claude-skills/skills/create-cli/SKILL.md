@@ -18,9 +18,12 @@ Design CLI surface area (syntax + behavior), agent-aware, human-friendly.
 
 ## Phase 1 — Prepare
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/create-cli/references/cli-guidelines.md` and apply it as the default rubric.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/create-cli/references/cli-guidelines.md` and
+`${CLAUDE_PLUGIN_ROOT}/skills/create-cli/references/language-selection.md`.
+Apply cli-guidelines.md as the default CLI rubric; use language-selection.md during Phase 2
+to inform the language recommendation.
 
-Proceed when cli-guidelines.md is loaded.
+Proceed when both files are loaded.
 
 ## Phase 2 — Clarify
 
@@ -32,7 +35,10 @@ Ask, then proceed with best-guess defaults if user is unsure:
 - Output contract: human text, `--json`, `--plain`, exit codes.
 - Interactivity: prompts allowed? need `--no-input`? confirmations for destructive ops?
 - Config model: flags/env/config-file; precedence; XDG vs repo-local.
-- Platform/runtime constraints: macOS/Linux/Windows; single binary vs runtime.
+- Language & distribution: ask for the user's preferred implementation language, or offer to
+  recommend one. Ask whether a single binary (no runtime needed on target machine) is required,
+  or whether a runtime dependency is acceptable. Apply language-selection.md to recommend if
+  the user is unsure. Platform: macOS/Linux/Windows.
 
 If an existing CLI spec or tool description is provided, read it first — skip questions already answered by it.
 
@@ -86,6 +92,8 @@ For audits of existing CLIs, produce a gap report (violations + recommended chan
 
 Use this skeleton, dropping irrelevant sections:
 
+0. **Language & distribution**: `Go` · `cobra` · single binary · `goreleaser` for CI
+   *(Omit if language was not determined.)*
 1. **Name**: `mycmd`
 2. **One-liner**: `...`
 3. **USAGE**:
@@ -120,5 +128,5 @@ Skill is complete when the spec or gap report is delivered.
 
 ## Notes
 
-- Prefer recommending a parsing library (language-specific) only when asked; otherwise keep this skill language-agnostic.
+- Once language is selected (Phase 2), include the idiomatic parsing library in the spec (see language-selection.md). If language remains undetermined, omit the library.
 - If the request is "design parameters", do not drift into implementation.

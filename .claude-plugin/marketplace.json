@@ -25,8 +25,8 @@
     },
     {
       "name": "claude-skills",
-      "description": "Skill authoring tools: generate, audit, and improve Claude Code skills and commands",
-      "version": "0.1.6",
+      "description": "Skill and agent authoring tools: generate, audit, and improve Claude Code skills, commands, and agents",
+      "version": "0.1.8",
       "source": "./plugins/claude-skills"
     },
     {
