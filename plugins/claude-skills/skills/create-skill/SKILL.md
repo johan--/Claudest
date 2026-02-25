@@ -43,6 +43,12 @@ Exit 1 = naming collision; ask user whether to overwrite or rename.
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/create-skill/references/frontmatter-options.md` for the full field catalog, description patterns, tool selection framework, and execution modifiers.
 
+**`context: fork` decision rule:** Add it only when ALL three hold: (1) outputs are predictable
+and deterministic, not open-ended analysis or conversation; (2) the primary deliverable is a
+side effect the user doesn't read inline — a file written, commit created, PR opened;
+(3) the skill has no `AskUserQuestion`. Skip it for interactive skills and for any skill whose
+output is what the user asked for (reports, audits, research, transcripts, advice).
+
 **Intensional over extensional — apply to all generated content.** State the rule directly with its reasoning rather than listing examples that imply the rule. An intensional rule ("quoted phrases must be verbatim user speech *because* routing matches on literal tokens") generalizes to every input the skill will encounter. An extensional approach requires the reader to reverse-engineer the rule — two reasoning hops instead of one, covering only the shape of those specific examples. Since this skill generates instructions that will themselves guide further generation, the quality of reasoning propagates.
 
 ### Step 3 — Write body
@@ -147,7 +153,7 @@ Proceed?
 ### Explain Your Choices
 
 When presenting the generated skill/command to the user, briefly explain:
-- **What you set and why** — "Added `context: fork` because this workflow generates heavy output"
+- **What you set and why** — "Added `context: fork`: outputs are deterministic, deliverable is a file/commit (side effect the user doesn't read inline), and no `AskUserQuestion` is used"
 - **What you excluded and why** — "Left `model` unset (inherits default), `hooks` omitted (no validation needed)"
 - **Add more trigger phrases if routing misses expected inputs**
 

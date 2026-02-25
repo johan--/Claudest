@@ -104,7 +104,12 @@ and tool selection framework.
 
 **Gaps:**
 - Does the skill do heavy analysis that would benefit from `model: opus`?
-- Does the skill produce heavy output that would pollute main context — missing `context: fork`?
+- Is `context: fork` absent when it should be present, or present when it shouldn't be?
+  Add it only when ALL three hold: (1) outputs are predictable and deterministic — not
+  open-ended analysis or conversation; (2) the primary deliverable is a side effect the user
+  doesn't need to read inline (file written, commit created, PR opened); (3) the skill has no
+  `AskUserQuestion`. Do not add it when the skill is interactive or when the output itself is
+  what the user asked for (reports, audits, research, transcripts, advice).
 - Does the skill invoke other skills or spawn agents without `Skill` or `Task` in `allowed-tools`?
 - Does the skill require user decisions mid-workflow but lacks `AskUserQuestion` in `allowed-tools`?
 - Does the skill read a file path from `$1` but uses a `Read` tool call instead of `@$1`

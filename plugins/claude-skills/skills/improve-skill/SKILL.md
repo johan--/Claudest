@@ -134,6 +134,9 @@ Evaluate the skill's interaction design:
 - Does the output format match how users consume it? A report users read once can be dense
   prose; one they apply iteratively needs more structure.
 - Are there steps where the skill makes a consequential decision without user input?
+- Is `context: fork` correctly applied? It belongs on deterministic side-effect workflows
+  (file writes, commits, PRs) with no `AskUserQuestion`. It does not belong on interactive
+  skills or skills whose output is what the user asked for (reports, analysis, advice).
 
 Phase 2 is complete when all four sub-analyses are finished and findings are recorded.
 

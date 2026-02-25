@@ -36,10 +36,12 @@ Audit rule: `opus` is only justified when the task genuinely requires deep reaso
 |-------|-------------|
 | `fork` | Only valid value. Runs the skill in an isolated sub-agent. |
 
-Use `context: fork` when: the skill produces heavy output that would pollute the main
-conversation context; the skill needs clean separation from conversation history; the
-skill delegates to a specialized agent via `agent:`. `agent:` is optional — omitting it
-defaults to `general-purpose`.
+Use `context: fork` only when ALL three conditions hold: (1) outputs are predictable and
+deterministic — not open-ended analysis or conversation; (2) the primary deliverable is a
+side effect the user doesn't need to read inline (file written, commit created, PR opened);
+(3) the skill has no `AskUserQuestion`. Do not use it when the skill is interactive or when
+the output itself is what the user asked for (reports, audits, research, transcripts, advice).
+`agent:` is optional — omitting it defaults to `general-purpose`.
 
 ### `agent` (string)
 
