@@ -31,12 +31,12 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 |--------|---------|--------|
 | [claude-memory](#claude-memory) | `0.7.7` | recall-conversations · extract-learnings |
 | [claude-research](#claude-research) | `0.1.4` | run-research · search-youtube |
-| [claude-coding](#claude-coding) | `0.1.10` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme |
-| [claude-skills](#claude-skills) | `0.1.9` | create-skill · repair-skill · improve-skill · create-cli · create-agent |
+| [claude-coding](#claude-coding) | `0.1.11` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme |
+| [claude-skills](#claude-skills) | `0.1.11` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
 | [claude-thinking](#claude-thinking) | `0.1.5` | brainstorm |
 | [claude-content](#claude-content) | `0.2.3` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
 | [claude-utilities](#claude-utilities) | `0.1.7` | convert-to-markdown |
-| [claude-claw](#claude-claw) | `0.1.0` | claw-advisor |
+| [claude-claw](#claude-claw) | `0.2.0` | claw-advisor · create-claw-skill |
 
 ---
 
@@ -93,7 +93,7 @@ brew install bird            # X / Twitter
 
 <a id="claude-coding"></a>
 
-### 💻 claude-coding &nbsp; ![v0.1.10](https://img.shields.io/badge/v0.1.10-blue?style=flat-square)
+### 💻 claude-coding &nbsp; ![v0.1.11](https://img.shields.io/badge/v0.1.11-blue?style=flat-square)
 
 Coding workflow skills for Claude Code. Seven skills covering the commit loop, project maintenance, and documentation.
 
@@ -121,9 +121,9 @@ Every coding session involves the same decisions: what belongs in one commit vs 
 
 <a id="claude-skills"></a>
 
-### ✍️ claude-skills &nbsp; ![v0.1.9](https://img.shields.io/badge/v0.1.9-blue?style=flat-square)
+### ✍️ claude-skills &nbsp; ![v0.1.11](https://img.shields.io/badge/v0.1.11-blue?style=flat-square)
 
-Skill authoring tools for Claude Code. Five complementary skills that cover the full lifecycle: generate skills, generate agents, audit, improve, and CLI design.
+Skill authoring tools for Claude Code. Six complementary skills that cover the full lifecycle: generate skills, generate agents, audit, improve, repair agents, and CLI design.
 
 Writing a good skill is harder than it looks. The description has to route correctly without being verbose — it's loaded on every session regardless of whether the skill fires, so every token costs something. The body has to be precise enough to produce consistent outcomes but loose enough that the model isn't re-generating boilerplate that should be a script. The agentic and deterministic parts of the workflow should be deliberately separated, not accidentally mixed. Most skills that feel "fine" are underspecified, over-verbose, or missing infrastructure they'd benefit from.
 
@@ -135,9 +135,11 @@ Writing a good skill is harder than it looks. The description has to route corre
 
 `create-agent` generates well-structured Claude Code agents — markdown files with YAML frontmatter that delegate complex multi-step work to autonomous subprocesses with isolated context windows. It fetches the latest agent documentation before generating, then interviews you about requirements: expert persona, tool access (allowed/disallowed), isolation level, model, and triggering conditions. It knows the critical distinction between agents (isolated context, second-person system prompt, spawned via Task tool) and skills (inline injection, imperative instructions, description routing) and designs the right artifact for each use case.
 
+`repair-agent` reads an existing Claude Code agent file and audits it against the same rubric as `repair-skill` but applied to agent-specific concerns: system prompt quality, tool access scope, context isolation correctness, triggering conditions, and example block completeness. Returns a structured report with violations, gaps, and applied fixes.
+
 `create-cli` designs a complete CLI surface before implementation — flags, subcommands, output format, error schema, and configuration — through a structured interview. Defaults to an agent-aware baseline (TTY auto-detection, structured error objects with executable hints, NDJSON for list commands) that serves both agent callers and humans at a terminal without extra flags.
 
-All five skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, a script patterns reference with five signal patterns for recognizing CLI candidates, and agent-aware CLI design guidelines.
+All six skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, a script patterns reference with five signal patterns for recognizing CLI candidates, and agent-aware CLI design guidelines.
 
 ```
 /plugin install claude-skills@claudest
@@ -210,7 +212,7 @@ curl -sSL https://raw.githubusercontent.com/gupsammy/EzyCopy/main/install.sh | s
 
 <a id="claude-claw"></a>
 
-### 🦞 claude-claw &nbsp; ![v0.1.0](https://img.shields.io/badge/v0.1.0-blue?style=flat-square)
+### 🦞 claude-claw &nbsp; ![v0.2.0](https://img.shields.io/badge/v0.2.0-blue?style=flat-square)
 
 OpenClaw advisory, troubleshooting, and configuration guidance for Claude Code.
 
@@ -219,6 +221,8 @@ OpenClaw is a local AI gateway — it routes model requests, manages channels (T
 `claw-advisor` answers OpenClaw questions, suggests optimal configuration, and diagnoses issues. It uses two backends: `clawdocs` for documentation lookup (always available) and `openclaw` for live state inspection (when the gateway is running). It classifies the question — focused, broad, troubleshooting, or design — and shapes the research accordingly. Focused questions get a single doc fetch; broad or cross-cutting questions spawn parallel subagents, one per topic area; troubleshooting questions always consult three sources — the domain doc, the domain troubleshooting page, and the general troubleshooting guide — then cross-references with `openclaw doctor` output if available.
 
 Responses are structured: direct answer first, then exact config keys with full dot-paths usable with `openclaw config get/set`, context on why the configuration is recommended, known gotchas, and a list of doc slugs consulted so you can dive deeper. It never invents OpenClaw flags or config keys — every claim traces back to fetched documentation.
+
+`create-claw-skill` generates new OpenClaw-compatible skills from scratch. It adapts the standard Claude Code skill authoring workflow to the OpenClaw ecosystem: clawhub frontmatter conventions, OpenClaw-specific tool access patterns, and skill deployment via the claw marketplace.
 
 ```
 /plugin install claude-claw@claudest

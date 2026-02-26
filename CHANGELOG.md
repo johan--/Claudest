@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add repair-agent skill to claude-skills for auditing and improving agent SKILL.md files
+- Add create-claw-skill to claude-claw for OpenClaw ecosystem skill authoring with full OpenClaw adaptation
+
+### Changed
+- Refactor create-skill and create-agent workflows: remove live documentation fetching, establish reference files as authoritative sources, restructure phases and delivery steps, replace brainstorm delegation with user interviews
+- Update Bash tool scopes in clean-branches to restrict to git and python3 operations
+- Add context:fork to update-readme skill for isolated parallel research workflow
+
+### Fixed
+- Remove context:fork rule from improve-skill Phase 2d (structural configuration belongs in repair-skill)
+- Remove redundant agent:general-purpose defaults from commit, make-changelog, and update-readme skills
+- Correct context:fork and agent: frontmatter semantics in repair-skill and create-skill documentation
+
+---
+
+### Added
 - Add create-agent skill to claude-skills with scripts, references, and examples (v0.1.9)
 - Add language selection to create-cli skill (claude-skills v0.1.8)
 - Add one-command installers for reddit-cli and brave-cli in run-research skill
