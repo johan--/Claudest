@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add discovery validation, edge case testing, and description quality rules to skill-lint in claude-skills (v0.2.0)
 - Add repair-agent skill to claude-skills for auditing and improving agent SKILL.md files
 - Add create-claw-skill to claude-claw for OpenClaw ecosystem skill authoring with full OpenClaw adaptation
 

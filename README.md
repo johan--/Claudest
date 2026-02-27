@@ -32,9 +32,9 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 | [claude-memory](#claude-memory) | `0.7.7` | recall-conversations · extract-learnings |
 | [claude-research](#claude-research) | `0.1.4` | run-research · search-youtube |
 | [claude-coding](#claude-coding) | `0.1.11` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme |
-| [claude-skills](#claude-skills) | `0.1.11` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
+| [claude-skills](#claude-skills) | `0.2.0` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
 | [claude-thinking](#claude-thinking) | `0.1.5` | brainstorm |
-| [claude-content](#claude-content) | `0.2.3` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
+| [claude-content](#claude-content) | `0.3.0` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
 | [claude-utilities](#claude-utilities) | `0.1.7` | convert-to-markdown |
 | [claude-claw](#claude-claw) | `0.2.0` | claw-advisor · create-claw-skill |
 
@@ -121,7 +121,7 @@ Every coding session involves the same decisions: what belongs in one commit vs 
 
 <a id="claude-skills"></a>
 
-### ✍️ claude-skills &nbsp; ![v0.1.11](https://img.shields.io/badge/v0.1.11-blue?style=flat-square)
+### ✍️ claude-skills &nbsp; ![v0.2.0](https://img.shields.io/badge/v0.2.0-blue?style=flat-square)
 
 Skill authoring tools for Claude Code. Six complementary skills that cover the full lifecycle: generate skills, generate agents, audit, improve, repair agents, and CLI design.
 
@@ -139,7 +139,7 @@ Writing a good skill is harder than it looks. The description has to route corre
 
 `create-cli` designs a complete CLI surface before implementation — flags, subcommands, output format, error schema, and configuration — through a structured interview. Defaults to an agent-aware baseline (TTY auto-detection, structured error objects with executable hints, NDJSON for list commands) that serves both agent callers and humans at a terminal without extra flags.
 
-All six skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, a script patterns reference with five signal patterns for recognizing CLI candidates, and agent-aware CLI design guidelines.
+All six skills share a `references/` library: a skill anatomy gold standard, a complete frontmatter options catalog with tool selection framework, a script patterns reference with five signal patterns for recognizing CLI candidates, and agent-aware CLI design guidelines. A `skill-lint` agent runs automatically after `create-skill` and `improve-skill` to validate structural quality — checking discovery trigger coverage, edge case handling, description quality, and five other audit dimensions — before the skill is delivered.
 
 ```
 /plugin install claude-skills@claudest
@@ -165,13 +165,13 @@ Some of the best thinking happens in conversation, but unstructured conversation
 
 <a id="claude-content"></a>
 
-### 🎬 claude-content &nbsp; ![v0.2.3](https://img.shields.io/badge/v0.2.3-blue?style=flat-square)
+### 🎬 claude-content &nbsp; ![v0.3.0](https://img.shields.io/badge/v0.3.0-blue?style=flat-square)
 
 Content creation and processing tools for Claude Code. Six skills covering image generation and the full video/audio manipulation workflow.
 
 Most content tasks involve the same small set of operations repeated across projects: compress this for web, convert to a different format, make it fit Instagram, extract the audio, generate a thumbnail. The individual FFmpeg commands are tedious to remember and easy to get wrong — the right CRF for H.265, the palette generation pipeline for GIF quality, the aspect ratio math for Reels. These skills encode the correct defaults so you don't have to look them up.
 
-`generate-image` calls Google's Gemini Pro Image API for text-to-image, image-to-image editing, and multi-reference composition. Give it a description and it generates the image. Give it a source image and editing instructions and it modifies it. Give it multiple reference images and a prompt and it composes them. Requires `GEMINI_API_KEY` and `uv`.
+`generate-image` calls Google's Gemini image generation API for text-to-image, image-to-image editing, and multi-reference composition. Two model tiers: Nano Banana (default) for fast generation with extended aspect ratios up to 8:1 panoramic, thinking mode for complex spatial reasoning, and Google Search grounding for factual content; and Nano Banana Pro for higher-quality output at up to 2K resolution. Supports JPEG output with configurable quality for high-volume workflows. Requires `GEMINI_API_KEY` and `uv`.
 
 `compress-video` profiles the source first, then applies quality-based (CRF) encoding to hit a visual quality target or size-based (2-pass) encoding to hit a file size target — whichever the workflow needs.
 
