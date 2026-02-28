@@ -32,7 +32,7 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 | [claude-memory](#claude-memory) | `0.7.7` | recall-conversations · extract-learnings |
 | [claude-research](#claude-research) | `0.1.4` | run-research · search-youtube |
 | [claude-coding](#claude-coding) | `0.1.11` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme |
-| [claude-skills](#claude-skills) | `0.2.0` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
+| [claude-skills](#claude-skills) | `0.2.1` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
 | [claude-thinking](#claude-thinking) | `0.1.5` | brainstorm |
 | [claude-content](#claude-content) | `0.3.1` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
 | [claude-utilities](#claude-utilities) | `0.1.7` | convert-to-markdown |
@@ -121,7 +121,7 @@ Every coding session involves the same decisions: what belongs in one commit vs 
 
 <a id="claude-skills"></a>
 
-### ✍️ claude-skills &nbsp; ![v0.2.0](https://img.shields.io/badge/v0.2.0-blue?style=flat-square)
+### ✍️ claude-skills &nbsp; ![v0.2.1](https://img.shields.io/badge/v0.2.1-blue?style=flat-square)
 
 Skill authoring tools for Claude Code. Six complementary skills that cover the full lifecycle: generate skills, generate agents, audit, improve, repair agents, and CLI design.
 
