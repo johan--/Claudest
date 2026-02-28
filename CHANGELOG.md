@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Add "Editing Failure Modes" section to generate-image editing-guide covering color label drift, high-contrast swap targets, Gemini camera move limitation, multi-pass editing, and base scene contamination (claude-content v0.3.1)
+- Add "Fashion & Garment Editing" section to generate-image capability-patterns with base selection criteria, garment swap prompt patterns, texture rendering, and multi-step edit workflows
+- Add "Working from Video References" section to generate-image capability-patterns with two-pass ffmpeg frame extraction and scene detection guidance
+
+### Changed
+- Expand generate-image i2i pre-generation checklist with three new guards: color label conflicts, accessory contamination, and single-change-per-prompt discipline (claude-content v0.3.1)
+- Extend generate-image thinking mode guidance to cover i2i multi-reference composition (3+ images), text/sign placement, and complex spatial edits
+
+### Added
 - Add discovery validation, edge case testing, and description quality rules to skill-lint in claude-skills (v0.2.0)
 - Add repair-agent skill to claude-skills for auditing and improving agent SKILL.md files
 - Add create-claw-skill to claude-claw for OpenClaw ecosystem skill authoring with full OpenClaw adaptation

@@ -34,7 +34,7 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 | [claude-coding](#claude-coding) | `0.1.11` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme |
 | [claude-skills](#claude-skills) | `0.2.0` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
 | [claude-thinking](#claude-thinking) | `0.1.5` | brainstorm |
-| [claude-content](#claude-content) | `0.3.0` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
+| [claude-content](#claude-content) | `0.3.1` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
 | [claude-utilities](#claude-utilities) | `0.1.7` | convert-to-markdown |
 | [claude-claw](#claude-claw) | `0.2.0` | claw-advisor · create-claw-skill |
 
@@ -165,7 +165,7 @@ Some of the best thinking happens in conversation, but unstructured conversation
 
 <a id="claude-content"></a>
 
-### 🎬 claude-content &nbsp; ![v0.3.0](https://img.shields.io/badge/v0.3.0-blue?style=flat-square)
+### 🎬 claude-content &nbsp; ![v0.3.1](https://img.shields.io/badge/v0.3.1-blue?style=flat-square)
 
 Content creation and processing tools for Claude Code. Six skills covering image generation and the full video/audio manipulation workflow.
 

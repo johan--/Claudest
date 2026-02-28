@@ -108,3 +108,47 @@ including the pillows on the sofa and the lighting, unchanged."
 ```
 
 "Only" defines scope. The element name ("the blue sofa") defines the mask region. The preservation clause ("keep the rest...unchanged") protects everything else.
+
+---
+
+## Editing Failure Modes
+
+Common ways i2i edits fail and how to avoid them. These patterns emerged from real production campaigns and apply to any editing workflow.
+
+### Color Labels Override Visual References
+
+Every color word in an editing prompt creates a competing signal against the reference image. If you name a color ("rust", "terracotta", "olive green"), the model generates the text-defined tone rather than the actual shade visible in the reference. This happens because the model resolves text-vs-image conflicts by blending both signals — the result matches neither.
+
+Remove all color words from editing directives. The reference block labels the image's role ("Reference shirt — women's linen blouse"); the directive says what to change ("Replace only the shirt with the blouse from the reference"). The reference image itself is the color spec.
+
+This applies to any visual attribute already present in the reference: color, cut, texture, proportion. Naming these in text creates drift. If you want something replicated exactly, don't describe it — let the image be the sole authority.
+
+### High-Contrast Swap Targets
+
+When replacing an element with something of a similar color (olive shirt → olive shirt of different cut), the model can't distinguish source from target and produces near-identical output. The fix is to choose a base image where the element being replaced is a contrasting color — e.g., use a white shirt base for an olive shirt swap. The high contrast gives the model an unambiguous replacement target.
+
+### Gemini Cannot Re-Frame
+
+Gemini cannot execute virtual camera moves. Prompts like "zoom in on the storefront," "show this from a closer angle," or "crop to a tighter shot" will either reproduce the original composition or generate an inconsistent scene — they will not produce a re-framed version of the same content.
+
+Always edit on a base image that already has the target angle, framing, and composition. If you need a closer shot, find or extract a frame at that angle rather than trying to prompt a re-frame.
+
+### Multi-Pass Editing
+
+The three-sentence directive structure (replace / match / keep) works for a single change. When a prompt has two competing changes — garment swap plus sign text, outfit plus accessories, subject plus background — the model compromises on one.
+
+Split into sequential passes: one change per generation call. Pattern for element replacement with correct proportions:
+
+1. **Pass 1**: Remove the element entirely (e.g., "Remove the price sign and easel from the scene")
+2. **Pass 2**: Re-add it using a visual reference (e.g., "Add the exact price sign and easel from image 2 to the right side of the shelf")
+
+This remove-then-re-add approach is specifically important for text and sign elements, where text-only swaps change the words but distort the element's proportions and positioning.
+
+### Base Scene Contamination
+
+Accessories and distinctive elements in the base image bleed into garment-swap outputs. If the base scene has a beret, the generated outfit may include a beret. If the base scene has sunglasses, they appear on the output model. Similarly, outfit references shot on plain studio backgrounds can override the base scene's location background — the gray studio backdrop replaces the street.
+
+When choosing a base image for garment editing:
+- Prefer images with minimal distinctive accessories
+- Avoid bases where the model wears items (bags, hats, jewelry) you don't want in the output
+- If using outfit references from studio shoots, verify the output preserves the base scene's environment

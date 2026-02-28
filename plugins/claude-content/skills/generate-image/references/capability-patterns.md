@@ -104,3 +104,68 @@ Photographic terms give precise control over framing and perspective.
 - **Angles**: eye level, low angle (heroic), high angle (diminishing), bird's eye, worm's eye, Dutch angle
 - **Lenses**: fisheye (distortion), wide-angle (expansive), normal 50mm (natural), telephoto (compression), macro (tiny subjects)
 - **Movement metaphors**: "tracking shot following the subject," "slow dolly-in," "crane shot rising above"
+
+---
+
+## Fashion & Garment Editing
+
+Garment swaps and fashion compositing require specific techniques beyond generic i2i editing.
+
+### Base Image Selection
+
+The base image matters as much as the prompt. Choose bases where:
+- The garment being replaced is a **contrasting color** to the target (white base → olive swap, not olive → olive)
+- The model/mannequin has **minimal accessories** (no bags, berets, sunglasses that bleed into output)
+- The composition already has the **target framing** (Gemini cannot re-frame — see editing-guide.md)
+
+### Garment Swap Prompts
+
+Use the reference block to label the image's role. Do not describe the garment's color, cut, or texture in the directive — those come from the reference image. The directive should only specify: what to change, what to keep, and the relationship between images.
+
+```
+Image 2: Reference shirt - women's linen blouse
+Image 1: Base scene - storefront with mannequin to preserve
+
+Replace only the shirt on the mannequin with the blouse from the reference.
+Preserve the authentic linen texture with natural drape.
+Keep the mannequin, store interior, and everything else exactly the same.
+```
+
+### Texture and Fabric
+
+For premium fabric rendering, name the texture type without describing the color: "authentic linen texture with natural slub weave and organic drape." This gives the model rendering instructions while letting the reference image control color fidelity.
+
+### Multi-Step Fashion Edits
+
+When changing outfit plus accessories or garment plus signage, split into passes (see editing-guide.md "Multi-Pass Editing"). Common two-step patterns:
+- Garment swap first, then sign/easel text edit
+- Outfit replacement first, then accessory adjustment
+- Subject compositing first, then pose refinement
+
+---
+
+## Working from Video References
+
+When using reference videos as starting points for image generation (e.g., adapting an existing ad concept):
+
+### Frame Extraction
+
+Use a two-pass approach with ffmpeg:
+
+1. **Scene detection** — Find transition timestamps:
+```bash
+ffmpeg -i input.mp4 -vf "select='gt(scene,THRESHOLD)',showinfo" -vsync vfr -f null - 2>&1 | grep "pts_time"
+```
+
+2. **Targeted extraction** — Extract a single frame at a specific timestamp:
+```bash
+ffmpeg -y -ss <TIMESTAMP> -i input.mp4 -frames:v 1 -update 1 output.png
+```
+
+Start with threshold 0.3 and lower to 0.15 if too few frames are detected. Fashion videos with smooth transitions (car wipes, camera pans) typically need the lower end.
+
+### Key Considerations
+
+- Scene detection fires on visual composition changes, not semantic content changes. In videos where transitions are masked by passing objects, scene detection catches the transition itself, not the clean reveal after it. A second probe pass between detected timestamps is necessary.
+- Always check `ffprobe` metadata first (`ffprobe -v quiet -print_format json -show_format -show_streams`) to understand resolution, fps, and duration.
+- Name extracted frames descriptively (e.g., `outfit_1_blue_denim.png`) rather than by frame number — self-documenting folders save time during editing.

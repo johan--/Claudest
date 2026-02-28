@@ -121,7 +121,7 @@ Nano Banana supports controllable thinking levels that improve complex prompt in
 - **low/medium** — balanced reasoning for moderately complex scenes
 - **high** — maximum reasoning for complex multi-element compositions, precise text rendering, or intricate spatial layouts
 
-Use `--thinking high` when the prompt involves precise spatial relationships, multiple text elements, or detailed composition requirements.
+Use `--thinking high` when the prompt involves precise spatial relationships, multiple text elements, or detailed composition requirements. For i2i editing, thinking mode also helps with multi-reference composition (3+ images), precise text/sign placement on existing scenes, and complex spatial edits where element positioning matters.
 
 ---
 
@@ -133,36 +133,17 @@ One unified script handles all modes: t2i, i2i, and multi-reference composition.
 # Text-to-image (t2i) — uses Nano Banana by default
 uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A serene mountain lake at dawn" --output landscape.png
 
-# Use Nano Banana Pro model
+# Nano Banana Pro model
 uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A serene mountain lake at dawn" --output landscape.png --model pro
 
 # Image-to-image editing (i2i)
 uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Make it sunset colors" --input photo.png --output edited.png
 
-# Multi-reference composition (up to 14 images with Nano Banana)
+# Multi-reference composition
 uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Combine the cat from image 1 with the background from image 2" --input cat.png --input background.png --output composite.png
 
-# With options
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Logo for 'Acme Corp'" --output logo.png --aspect 1:1 --resolution 2K
-
-# With Google Search grounding (web + image search)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Current weather in Tokyo visualized" --output weather.png --grounding --image-grounding
-
-# With thinking mode (Nano Banana only)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Complex architectural blueprint" --output building.png --thinking high
-
-# Quick preview with 0.5K (Nano Banana only)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A cat in space" --output preview.png --resolution 0.5K
-
-# JPEG output with quality control
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Product photo" --output product.jpg --format jpeg --quality 90
-
-# JSON output for agent consumption
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A cat" --output cat.png --json
-
-# Batch generation (up to 4 images)
-uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "A cat in different poses" --output cat.png --batch 4
-# Outputs: cat-1.png, cat-2.png, cat-3.png, cat-4.png
+# With options (aspect ratio, resolution, thinking, batch, grounding, format)
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt "Logo for 'Acme Corp'" --output logo.png --aspect 1:1 --resolution 2K --thinking high
 ```
 
 ### Script Options
@@ -184,26 +165,7 @@ uv run ${CLAUDE_PLUGIN_ROOT}/skills/generate-image/scripts/generate.py --prompt 
 | `--json` | | Output results as JSON for agent consumption |
 | `--quiet` | | Suppress progress output (MEDIA lines still printed) |
 
-### Auto-Resolution Detection
-
-When editing images, the script automatically detects appropriate resolution from input dimensions:
-- Input ≥3000px → 4K output
-- Input ≥1500px → 2K output
-- Otherwise → 1K output
-
-Override with explicit `--resolution` flag.
-
-### Auto Aspect Ratio Detection
-
-When no `--aspect` flag is provided:
-- **With reference images**: Detects from the **last** input image (closest supported ratio for the selected model — Nano Banana has more options)
-- **Without reference images (t2i)**: Defaults to 1:1
-
-This matches typical editing workflows where the last image is the canvas being edited.
-
-### Image Optimization
-
-Large input images (>2048px) are automatically resized before sending to the API to prevent timeout errors. The script uses high-quality LANCZOS resampling to preserve detail during downscaling. Original files are never modified.
+The script auto-detects resolution and aspect ratio from input images when flags are omitted, and automatically resizes large inputs (>2048px) before sending to the API.
 
 ---
 
@@ -223,4 +185,7 @@ Large input images (>2048px) are automatically resized before sending to the API
 - [ ] Each directive (replace/match/keep) is its own sentence?
 - [ ] Base image is last in `--input` list?
 - [ ] When extracting/transferring elements: explicitly named each element rather than generic "outfit/object from image X"?
+- [ ] No color labels competing with reference image? (color words override visual reference — see editing-guide)
+- [ ] Base image has minimal accessories that could contaminate? (bags, hats, sunglasses bleed into output)
+- [ ] Only one change per prompt? (split competing directives into sequential passes)
 - [ ] Reference count within model limits? (Nano Banana: 14, Nano Banana Pro: 11)
