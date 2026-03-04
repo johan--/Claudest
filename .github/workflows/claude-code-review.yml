@@ -39,6 +39,6 @@ jobs:
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          # show_full_output: true  # Uncomment temporarily to debug review output
+          show_full_output: true  # TEMP: debugging review output - remove after diagnosis
           allowed_tools: 'Bash(gh:*),Bash(git:*),Read,Glob,Grep,WebFetch'
 
