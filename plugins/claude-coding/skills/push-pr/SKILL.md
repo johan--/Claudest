@@ -6,11 +6,11 @@ description: >
   "create a PR", "open a pull request", "make a PR", "submit for review", "send this up",
   "open PR", "pr please", or any mention of pushing code or creating a PR.
 model: sonnet
-context: fork
 argument-hint: "[status: 1=open|2=draft|3=ready] [base-branch]"
 allowed-tools:
   - Bash(git:*)
   - Bash(gh:*)
+  - Bash(python3:*)
   - Skill
   - AskUserQuestion
 ---
@@ -54,9 +54,11 @@ condense the subject to 2–4 words (`fix login redirect timeout` → `fix/login
 ```bash
 git log origin/main..HEAD --oneline
 git checkout -b <derived-branch-name>
-git checkout main && git reset --hard origin/main
-git checkout <derived-branch-name>
+git branch -f main origin/main
 ```
+
+`git branch -f` moves main's pointer back to origin/main without checkout or `--hard` —
+non-destructive and never triggers permission denials.
 
 **If already on a feature branch:** skip, proceed to step 3.
 
@@ -64,9 +66,12 @@ git checkout <derived-branch-name>
 
 ```bash
 BASE=${BASE_BRANCH:-main}
-git log $BASE..HEAD --oneline --reverse
-git diff $BASE...HEAD --stat
+git log origin/$BASE..HEAD --oneline --reverse
+git diff origin/$BASE...HEAD --stat
 ```
+
+Always compare against `origin/$BASE`, not local `$BASE` — the PR targets the remote branch,
+so comparisons must match what GitHub will see.
 
 Record: commit count, conventional-commit types and scopes present, total diff lines
 (approximate from `--stat` output).
@@ -132,13 +137,16 @@ else
 fi
 ```
 
+If push fails because the remote branch has diverged, run `git pull --rebase origin $BRANCH`
+and retry the push once. If the rebase itself has conflicts, stop and report.
+
 ### 7. PR Creation/Update
 
 Generate the PR body using the format script. Pass the correct base branch — for stacked
 PRs this is the previous cluster's branch, not necessarily `$BASE`:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base "$BASE"
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base "origin/$BASE"
 ```
 
 Exit 1 means no changes found relative to base; report to user. On success, use stdout
@@ -171,8 +179,9 @@ gh pr comment $PR_NUM --body "New commits: ..."
 - No `gh` CLI → report requirement and stop
 - Branch behind remote → pull/rebase before pushing
 - No commits to push → report and stop
-- Cherry-pick conflict during stacked flow → stop, report which cluster failed, suggest
-  resolving manually then re-running
+- Cherry-pick conflict during stacked flow → stop, report the cluster name, failing commit
+  SHA, and conflicting file(s). Suggest `git cherry-pick --abort` followed by manual
+  resolution, then re-running
 
 ## Output
 
@@ -181,16 +190,3 @@ Single PR: branch name, PR URL, PR status (opened/draft/ready).
 Stacked PRs: ordered list showing each PR URL and the branch it targets, plus the name
 of the final branch now checked out.
 
-## Scripts
-
-`scripts/format-pr-body.py` — generates a formatted markdown PR body by reading git
-history and diff stats. Invoked in step 7.
-
-```bash
-# Usage
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base main
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/push-pr/scripts/format-pr-body.py --base feat/auth --output json
-```
-
-Exit 0: PR body written to stdout. Exit 1: no changes found (script reports to stderr).
-JSON mode returns `{"title": "<first commit message>", "body": "<markdown body>"}`.
