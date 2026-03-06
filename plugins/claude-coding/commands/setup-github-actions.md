@@ -73,6 +73,12 @@ ls .github/workflows/ 2>/dev/null
 cat .github/workflows/*.yml 2>/dev/null
 ```
 
+**Pre-check:** If `.github/workflows/` does not exist or contains no `.yml` files, stop. Tell the user:
+
+> No GitHub Actions workflows were found. `/setup-github-actions` configures Claude Code workflows, but the GitHub App and initial workflow skeleton need to exist first. Run `/install-github-app` to complete that setup, then re-run `/setup-github-actions`.
+
+Do not proceed past this point until the user has run `/install-github-app`.
+
 For each `.yml` found, classify:
 - **Broken default**: Uses `anthropics/claude-code-action@v1`, all permissions are `read`, no `prompt` or `claude_args` configured — this is the vanilla skeleton installed by `/install-github-app`. Flag it prominently.
 - **Existing Claude Code workflow**: Already correctly configured for a specific purpose. Note what it covers.

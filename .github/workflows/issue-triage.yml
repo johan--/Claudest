@@ -1,0 +1,37 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Triage issue
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            Triage the newly opened issue #${{ github.event.issue.number }} in ${{ github.repository }}.
+
+            Steps:
+            1. Fetch the issue: gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }}
+            2. List existing labels: gh label list --repo ${{ github.repository }}
+            3. Read the project manifest or README to understand the codebase.
+            4. Apply the most appropriate existing labels to the issue. If no labels fit, post a brief
+               triage comment categorizing the issue and noting what additional information would help
+               resolve it. Do not create new labels.
+          claude_args: |
+            --allowedTools "Bash(gh issue view:*),Bash(gh issue list:*),Bash(gh issue edit:*),Bash(gh label:*),Read,Glob"
