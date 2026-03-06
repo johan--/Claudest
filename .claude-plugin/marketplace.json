@@ -31,8 +31,8 @@
     },
     {
       "name": "claude-coding",
-      "description": "Coding workflow skills: intelligent commits, push & PR, branch cleanup, CLAUDE.md maintenance, README generation, changelog creation, and README updating",
-      "version": "0.1.13",
+      "description": "Coding workflow skills: intelligent commits, push & PR, branch cleanup, CLAUDE.md maintenance, README generation, changelog creation, README updating, and GitHub Actions setup",
+      "version": "0.1.14",
       "source": "./plugins/claude-coding"
     },
     {
