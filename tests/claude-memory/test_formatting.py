@@ -1,5 +1,7 @@
 """Tests for memory_lib.formatting — time formatting, project paths, session rendering."""
 
+from __future__ import annotations
+
 import re
 
 from memory_lib.formatting import (

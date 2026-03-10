@@ -17,7 +17,7 @@ def sanitize_fts_term(term: str) -> str:
     Keeps alphanumeric, spaces, and basic punctuation.
     """
     # Remove quotes, parentheses, asterisks, and word boundaries
-    sanitized = re.sub(r'["\(\)*]', '', term)
+    sanitized = re.sub(r'["\(\)*\-^]', '', term)
     # Remove FTS keywords: NEAR, AND, OR, NOT (case-insensitive)
     sanitized = re.sub(r'\b(NEAR|AND|OR|NOT)\b', '', sanitized, flags=re.IGNORECASE)
     # Strip whitespace

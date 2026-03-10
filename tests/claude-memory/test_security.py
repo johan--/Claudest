@@ -1,5 +1,7 @@
 """Tests for sanitize_fts_term — FTS injection prevention."""
 
+from __future__ import annotations
+
 from memory_lib.content import sanitize_fts_term
 
 
@@ -64,9 +66,17 @@ class TestSanitizeFtsTerm:
         assert "(" not in result
         assert "*" not in result
 
+    def test_removes_dash_operator(self):
+        # FTS5 uses -term as NOT shorthand
+        assert sanitize_fts_term("-excluded") == "excluded"
+        assert sanitize_fts_term("hello -world") == "hello world"
+
+    def test_removes_caret_operator(self):
+        # FTS5 uses ^term for initial token match
+        assert sanitize_fts_term("^first") == "first"
+
     def test_preserves_normal_punctuation(self):
-        # Hyphens, underscores, dots should pass through
-        assert sanitize_fts_term("my-project") == "my-project"
+        # Underscores, dots should pass through
         assert sanitize_fts_term("file_name") == "file_name"
         assert sanitize_fts_term("v1.0.0") == "v1.0.0"
 

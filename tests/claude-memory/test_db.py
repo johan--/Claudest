@@ -1,5 +1,7 @@
 """Tests for memory_lib.db — schema creation, migration, settings."""
 
+from __future__ import annotations
+
 import sqlite3
 import tempfile
 from pathlib import Path
