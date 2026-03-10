@@ -1,6 +1,6 @@
 {
   "name": "claude-claw",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "OpenClaw tools: advisory, troubleshooting, and skill building for OpenClaw",
   "author": {
     "name": "Samarth Gupta"

@@ -29,20 +29,20 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 
 | Plugin | Version | Skills |
 |--------|---------|--------|
-| [claude-memory](#claude-memory) | `0.8.2` | recall-conversations · extract-learnings |
-| [claude-research](#claude-research) | `0.2.0` | run-research · search-youtube |
-| [claude-coding](#claude-coding) | `0.2.0` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme · setup-github-actions |
-| [claude-skills](#claude-skills) | `0.3.0` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
-| [claude-thinking](#claude-thinking) | `0.2.0` | brainstorm |
-| [claude-content](#claude-content) | `0.4.0` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
-| [claude-utilities](#claude-utilities) | `0.2.0` | convert-to-markdown |
-| [claude-claw](#claude-claw) | `0.3.0` | claw-advisor · create-claw-skill |
+| [claude-memory](#claude-memory) | `0.8.3` | recall-conversations · extract-learnings |
+| [claude-research](#claude-research) | `0.2.1` | run-research · search-youtube |
+| [claude-coding](#claude-coding) | `0.2.1` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme · setup-github-actions |
+| [claude-skills](#claude-skills) | `0.3.1` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
+| [claude-thinking](#claude-thinking) | `0.2.1` | brainstorm |
+| [claude-content](#claude-content) | `0.4.1` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
+| [claude-utilities](#claude-utilities) | `0.2.1` | convert-to-markdown |
+| [claude-claw](#claude-claw) | `0.3.1` | claw-advisor · create-claw-skill |
 
 ---
 
 <a id="claude-memory"></a>
 
-### 🧠 claude-memory &nbsp; ![v0.8.2](https://img.shields.io/badge/v0.8.2-blue?style=flat-square)
+### 🧠 claude-memory &nbsp; ![v0.8.3](https://img.shields.io/badge/v0.8.3-blue?style=flat-square)
 
 Conversation memory for Claude Code. Recall what happened yesterday, last week, or three weeks ago.
 

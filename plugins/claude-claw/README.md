@@ -1,4 +1,4 @@
-# claude-claw ![v0.3.0](https://img.shields.io/badge/v0.3.0-blue?style=flat-square)
+# claude-claw ![v0.3.1](https://img.shields.io/badge/v0.3.1-blue?style=flat-square)
 
 OpenClaw tools for Claude Code: advisory, troubleshooting, and skill authoring for OpenClaw. Two skills — one that answers OpenClaw questions, suggests configuration, diagnoses issues, and guides design decisions; another that generates well-structured OpenClaw skills and slash commands from scratch or by porting existing Claude Code skills.
 

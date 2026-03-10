@@ -1,4 +1,4 @@
-# claude-content v0.4.0
+# claude-content v0.4.1
 
 Content creation and processing tools for Claude Code. Six skills covering image generation, video manipulation, social media formatting, and audio extraction.
 

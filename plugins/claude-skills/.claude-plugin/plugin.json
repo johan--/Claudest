@@ -1,6 +1,6 @@
 {
   "name": "claude-skills",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Skill and agent authoring tools: generate, audit, and improve Claude Code skills, commands, and agents",
   "author": {
     "name": "Samarth Gupta"

@@ -1,6 +1,6 @@
 # claude-research
 
-![v0.2.0](https://img.shields.io/badge/v0.2.0-blue?style=flat-square)
+![v0.2.1](https://img.shields.io/badge/v0.2.1-blue?style=flat-square)
 
 Cross-platform research skills for Claude Code.
 
