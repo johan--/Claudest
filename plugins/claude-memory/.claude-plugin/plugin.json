@@ -1,9 +1,15 @@
 {
   "name": "claude-memory",
   "description": "Searchable conversation memory - auto-syncs sessions to SQLite with full-text search",
-  "version": "0.7.8",
+  "version": "0.8.0",
   "author": {
     "name": "Samarth Gupta"
   },
-  "keywords": ["memory", "conversations", "search", "context", "sqlite"]
+  "keywords": [
+    "memory",
+    "conversations",
+    "search",
+    "context",
+    "sqlite"
+  ]
 }

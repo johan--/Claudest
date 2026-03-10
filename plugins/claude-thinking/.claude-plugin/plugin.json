@@ -1,9 +1,15 @@
 {
   "name": "claude-thinking",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "Structured thinking tools: interviews, decision frameworks, and reasoning aids",
   "author": {
     "name": "Samarth Gupta"
   },
-  "keywords": ["thinking", "interview", "reasoning", "decisions", "brainstorm"]
+  "keywords": [
+    "thinking",
+    "interview",
+    "reasoning",
+    "decisions",
+    "brainstorm"
+  ]
 }

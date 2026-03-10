@@ -1,9 +1,17 @@
 {
   "name": "claude-claw",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "OpenClaw tools: advisory, troubleshooting, and skill building for OpenClaw",
   "author": {
     "name": "Samarth Gupta"
   },
-  "keywords": ["openclaw", "claw-advisor", "configuration", "troubleshooting", "clawdocs", "channels", "gateway"]
+  "keywords": [
+    "openclaw",
+    "claw-advisor",
+    "configuration",
+    "troubleshooting",
+    "clawdocs",
+    "channels",
+    "gateway"
+  ]
 }

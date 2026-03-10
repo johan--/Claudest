@@ -1,11 +1,7 @@
 ---
 name: push-pr
-description: >
-  This skill should be used when the user wants to push commits, create or update a pull
-  request, or submit code for review. Triggers on "push this", "push my changes",
-  "create a PR", "open a pull request", "make a PR", "submit for review", "send this up",
-  "open PR", "pr please", or any mention of pushing code or creating a PR.
-model: sonnet
+description: |
+  This skill should be used when the user wants to push commits, create or update a pull request, or submit code for review. Triggers on "push this", "push my changes", "create a PR", "open a pull request", "make a PR", "submit for review", "send this up", "open PR", "pr please", or any mention of pushing code or creating a PR.
 argument-hint: "[status: 1=open|2=draft|3=ready] [base-branch]"
 allowed-tools:
   - Bash(git:*)

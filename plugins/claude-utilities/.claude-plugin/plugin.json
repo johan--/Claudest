@@ -1,9 +1,14 @@
 {
   "name": "claude-utilities",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "A collection of useful utilities, tools, and skills for Claude Code",
   "author": {
     "name": "Samarth Gupta"
   },
-  "keywords": ["utilities", "tools", "web-extraction", "productivity"]
+  "keywords": [
+    "utilities",
+    "tools",
+    "web-extraction",
+    "productivity"
+  ]
 }

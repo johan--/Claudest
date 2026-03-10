@@ -1,11 +1,7 @@
 ---
 name: commit
-description: >
-  This skill should be used when the user says "commit my changes", "commit this",
-  "git commit", "save my work", "stage and commit", or mentions committing code.
-  Also triggers on "create a commit" or "commit what I've done".
-model: sonnet
-context: fork
+description: |
+  This skill should be used when the user says "commit my changes", "commit this", "git commit", "save my work", "stage and commit", or mentions committing code. Also triggers on "create a commit" or "commit what I've done".
 argument-hint: "[push]"
 allowed-tools:
   - Bash(git:*)
