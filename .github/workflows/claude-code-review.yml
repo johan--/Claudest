@@ -3,26 +3,18 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
       id-token: write
+
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
 
     steps:
       - name: Checkout repository
@@ -36,8 +28,48 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          prompt: |
+            Review PR #${{ env.PR_NUMBER }} in ${{ env.REPO }}.
+
+            Start by fetching the diff and reading changed files:
+              gh pr diff ${{ env.PR_NUMBER }} --repo ${{ env.REPO }}
+
+            This repository is a Claude Code plugin marketplace. Most changes involve one or more of:
+            - Python lifecycle hooks (hooks/*.py) — stdlib-only, cross-platform, Python 3.7+
+            - Skill definitions (skills/*/SKILL.md) — agent-consumed prompt files
+            - Plugin manifests (.claude-plugin/plugin.json, marketplace.json)
+            - Shared utility modules (memory_lib/*.py)
+
+            Review each changed file against the criteria relevant to its type:
+
+            PYTHON HOOKS AND SCRIPTS
+            - No third-party imports. Only Python 3.7+ stdlib is allowed in hooks.
+            - All .py files must have `from __future__ import annotations` at the top.
+            - No `RETURNING` clause in SQL — use `cursor.lastrowid` or a follow-up SELECT.
+            - Temp files must use `tempfile.mkstemp()` with explicit `os.fdopen(fd)` (TOCTOU safety).
+            - Path inputs must be validated with `.resolve().relative_to()` to prevent traversal.
+            - FTS query terms must be sanitized (strip operators: `"()* `, strip keywords: AND OR NOT NEAR).
+            - Dynamic SQL IN clauses must use parameterized placeholders: `",".join("?" * len(ids))`.
+            - SQLite connections must use WAL mode and `busy_timeout = 5000`.
+
+            SKILL FILES (SKILL.md)
+            - Frontmatter must include: `name`, `description`, `triggers` (array), `version`.
+            - Description must be short (under 120 chars) — verbose descriptions pollute the agent's context window.
+            - Use imperative voice throughout. Terse phrasing — every token costs budget.
+            - Scripts must be referenced via `$CLAUDE_PLUGIN_ROOT/skills/<name>/scripts/`, not `~/.claude/skills/`.
+            - No duplication of rules across files — one authoritative home per rule.
+
+            PLUGIN MANIFESTS
+            - Version must be bumped in both `.claude-plugin/plugin.json` and root `.claude-plugin/marketplace.json`.
+            - If one is bumped and the other is not, flag it as a required fix.
+            - Commit messages should follow conventional commits with plugin scope: `feat(memory):`, `fix(skills):`, etc.
+
+            GENERAL
+            - No over-engineering: no abstractions for one-time operations, no hypothetical future requirements.
+            - No hardcoded absolute paths or user-specific paths.
+            - No PyYAML or other non-stdlib dependencies in hook code.
+
+            Post inline comments on specific lines where issues are found. End with a top-level PR comment
+            summarizing: what looks good, what must be fixed before merge, and any optional suggestions.
           claude_args: |
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"
+            --allowedTools "Read,Glob,Grep,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*),mcp__github_inline_comment__create_inline_comment"
