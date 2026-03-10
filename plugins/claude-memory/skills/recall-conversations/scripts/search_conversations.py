@@ -9,30 +9,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sqlite3
 import sys
 from pathlib import Path
 
 # Local imports
 from memory_lib.db import DEFAULT_DB_PATH, detect_fts_support
+from memory_lib.content import sanitize_fts_term
 from memory_lib.formatting import format_markdown_session, format_json_sessions
-
-
-def sanitize_fts_term(term: str) -> str:
-    """Remove FTS special characters from search term.
-
-    Strips characters that are FTS operators or special syntax:
-    quotes, parentheses, asterisks, and FTS keywords.
-    Keeps alphanumeric, spaces, and basic punctuation.
-    """
-    # Remove quotes, parentheses, asterisks, and word boundaries
-    sanitized = re.sub(r'["\(\)*]', '', term)
-    # Remove FTS keywords: NEAR, AND, OR, NOT (case-insensitive)
-    sanitized = re.sub(r'\b(NEAR|AND|OR|NOT)\b', '', sanitized, flags=re.IGNORECASE)
-    # Strip whitespace
-    sanitized = sanitized.strip()
-    return sanitized
 
 
 def search_sessions(

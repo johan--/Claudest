@@ -1,12 +1,17 @@
 """Tests for memory_lib.db — schema creation, migration, settings."""
 
+from __future__ import annotations
+
 import sqlite3
+import tempfile
+from pathlib import Path
 
 from memory_lib.db import (
     DEFAULT_SETTINGS,
     SCHEMA,
     _migrate_columns,
     load_settings,
+    migrate_db,
 )
 
 
@@ -249,3 +254,71 @@ class TestLoadSettings:
         assert DEFAULT_SETTINGS["logging_enabled"] is False
         assert DEFAULT_SETTINGS["sync_on_stop"] is True
         assert isinstance(DEFAULT_SETTINGS["exclude_projects"], list)
+
+
+class TestMigrateDb:
+    """Test migrate_db — v2 schema detection and DB replacement."""
+
+    def test_fresh_db_no_tables(self):
+        """A fresh DB with no tables should return False (no migration needed)."""
+        conn = sqlite3.connect(":memory:")
+        result = migrate_db(conn)
+        assert result is False
+
+    def test_v3_db_no_migration(self):
+        """A DB with branches table (v3) should return False."""
+        conn = sqlite3.connect(":memory:")
+        conn.executescript(SCHEMA)
+        conn.commit()
+        result = migrate_db(conn)
+        assert result is False
+
+    def test_v2_db_file_migrated(self):
+        """A file-backed DB with sessions but no branches (v2) should be deleted and recreated."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+            db_path = Path(f.name)
+
+        try:
+            # Create a v2-style DB (sessions exists, branches doesn't)
+            conn = sqlite3.connect(str(db_path))
+            conn.execute("""
+                CREATE TABLE sessions (
+                    id INTEGER PRIMARY KEY,
+                    uuid TEXT UNIQUE NOT NULL,
+                    project_id INTEGER
+                )
+            """)
+            conn.execute("INSERT INTO sessions (uuid) VALUES ('old-session')")
+            conn.commit()
+
+            result = migrate_db(conn)
+            assert result is True, "Should detect v2 schema and migrate"
+
+            # Old DB should have been deleted and recreated with v3 schema
+            # Verify new schema has branches table
+            new_conn = sqlite3.connect(str(db_path))
+            cursor = new_conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='branches'")
+            assert cursor.fetchone() is not None, "Recreated DB should have branches table"
+
+            # Old session should be gone (DB was nuked)
+            cursor.execute("SELECT COUNT(*) FROM sessions")
+            assert cursor.fetchone()[0] == 0, "Old data should be gone after migration"
+            new_conn.close()
+        finally:
+            if db_path.exists():
+                db_path.unlink()
+
+    def test_v2_in_memory_migrated(self):
+        """An in-memory DB with v2 schema should return True and handle gracefully."""
+        conn = sqlite3.connect(":memory:")
+        conn.execute("""
+            CREATE TABLE sessions (
+                id INTEGER PRIMARY KEY,
+                uuid TEXT UNIQUE NOT NULL
+            )
+        """)
+        conn.commit()
+
+        result = migrate_db(conn)
+        assert result is True, "Should detect v2 schema in memory DB"

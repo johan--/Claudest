@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -27,7 +26,7 @@ from memory_lib.db import (
     DEFAULT_DB_PATH, DEFAULT_PROJECTS_DIR, get_db_path,
     get_db_connection, load_settings, setup_logging, detect_fts_support,
 )
-from memory_lib.content import extract_text_content, is_task_notification, is_teammate_message, is_tool_result
+from memory_lib.content import extract_text_content, is_task_notification, is_teammate_message, is_tool_result, sanitize_fts_term
 from memory_lib.parsing import (
     parse_jsonl_file, parse_all_with_uuids, extract_session_metadata,
     find_all_branches, compute_branch_metadata, aggregate_branch_content,
@@ -42,22 +41,6 @@ def get_file_hash(filepath: Path) -> str:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def sanitize_fts_term(term: str) -> str:
-    """Remove FTS special characters from search term.
-
-    Strips characters that are FTS operators or special syntax:
-    quotes, parentheses, asterisks, and FTS keywords.
-    Keeps alphanumeric, spaces, and basic punctuation.
-    """
-    # Remove quotes, parentheses, asterisks, and word boundaries
-    sanitized = re.sub(r'["\(\)*]', '', term)
-    # Remove FTS keywords: NEAR, AND, OR, NOT (case-insensitive)
-    sanitized = re.sub(r'\b(NEAR|AND|OR|NOT)\b', '', sanitized, flags=re.IGNORECASE)
-    # Strip whitespace
-    sanitized = sanitized.strip()
-    return sanitized
 
 
 def import_session(

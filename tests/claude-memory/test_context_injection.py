@@ -21,6 +21,7 @@ memory_context = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(memory_context)
 
 select_sessions = memory_context.select_sessions
+build_context = memory_context.build_context
 
 
 class TestSessionSelection:
@@ -331,3 +332,146 @@ class TestSessionSelection:
         # Only sess-active should be selected; sess-inactive is excluded by is_active filter
         assert len(selected) == 1
         assert selected[0]["uuid"] == "sess-active"
+
+
+class TestBuildContext:
+    """Test build_context() — the markdown renderer for context injection."""
+
+    def test_empty_sessions_returns_empty(self):
+        assert build_context([]) == ""
+
+    def test_single_session_renders_exchange(self):
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "How do I use pytest?", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Run pytest from the project root.", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }]
+        result = build_context(sessions)
+        assert "### Session:" in result
+        assert "How do I use pytest?" in result
+        assert "Run pytest from the project root." in result
+        assert "User:**" in result
+        assert "Assistant:**" in result
+
+    def test_tool_markers_stripped(self):
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "Read the file", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Here is the content [Tool: Read] of the file [Tool: Bash].", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }]
+        result = build_context(sessions)
+        assert "[Tool: Read]" not in result
+        assert "[Tool: Bash]" not in result
+        assert "Here is the content" in result
+        assert "of the file" in result
+
+    def test_no_messages_skipped(self):
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [],
+        }]
+        result = build_context(sessions)
+        # Session header should exist but no exchange content
+        assert "### Session:" in result
+        assert "User:**" not in result
+
+    def test_multi_session_separator(self):
+        sessions = [
+            {
+                "started_at": "2025-01-15T14:00:00Z",
+                "ended_at": "2025-01-15T14:30:00Z",
+                "files_modified": [],
+                "commits": [],
+                "messages": [
+                    {"role": "user", "content": "First session", "timestamp": "2025-01-15T14:00:00Z"},
+                    {"role": "assistant", "content": "OK", "timestamp": "2025-01-15T14:01:00Z"},
+                ],
+            },
+            {
+                "started_at": "2025-01-15T15:00:00Z",
+                "ended_at": "2025-01-15T15:30:00Z",
+                "files_modified": [],
+                "commits": [],
+                "messages": [
+                    {"role": "user", "content": "Second session", "timestamp": "2025-01-15T15:00:00Z"},
+                    {"role": "assistant", "content": "OK2", "timestamp": "2025-01-15T15:01:00Z"},
+                ],
+            },
+        ]
+        result = build_context(sessions)
+        assert "---" in result
+        assert "First session" in result
+        assert "Second session" in result
+
+    def test_files_modified_rendered(self):
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": ["/src/main.py", "/src/utils.py"],
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "Fix the bug", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Done.", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }]
+        result = build_context(sessions)
+        assert "### Files Modified" in result
+        assert "`/src/main.py`" in result
+        assert "`/src/utils.py`" in result
+
+    def test_files_truncated_at_10(self):
+        files = [f"/file{i}.py" for i in range(15)]
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": files,
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "Work", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Done.", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }]
+        result = build_context(sessions)
+        assert "...and 5 more" in result
+
+    def test_commits_rendered(self):
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": ["fix: resolve parsing bug"],
+            "messages": [
+                {"role": "user", "content": "Commit it", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Committed.", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }]
+        result = build_context(sessions)
+        assert "### Git Commits" in result
+        assert "fix: resolve parsing bug" in result
+
+    def test_user_without_assistant_response(self):
+        sessions = [{
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "Last question unanswered", "timestamp": "2025-01-15T14:30:00Z"},
+            ],
+        }]
+        result = build_context(sessions)
+        assert "Last question unanswered" in result
+        assert "User:**" in result

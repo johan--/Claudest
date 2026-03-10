@@ -1,5 +1,9 @@
 """Tests for memory_lib.formatting — time formatting, project paths, session rendering."""
 
+from __future__ import annotations
+
+import re
+
 from memory_lib.formatting import (
     extract_project_name,
     format_markdown_session,
@@ -14,8 +18,7 @@ class TestFormatTime:
     def test_valid_iso_timestamp(self):
         result = format_time("2025-01-15T14:30:00Z")
         # Should produce HH:MM in local timezone
-        assert len(result) == 5
-        assert ":" in result
+        assert re.match(r"\d{2}:\d{2}$", result), f"Expected HH:MM format, got {result!r}"
 
     def test_none_returns_placeholder(self):
         assert format_time(None) == "??:??"
@@ -51,12 +54,19 @@ class TestProjectKey:
         assert get_project_key("/home/user/.config") == "-home-user--config"
 
     def test_parse_project_key_roundtrip(self):
-        """parse_project_key(get_project_key(path)) should reconstruct a path."""
+        """parse_project_key(get_project_key(path)) should roundtrip for paths without dashes."""
         original = "/Users/sam/project"
         key = get_project_key(original)
         reconstructed = parse_project_key(key)
-        # parse_project_key replaces ALL dashes with /, so this is lossy for paths with dashes
-        # But for simple paths without dashes, it should roundtrip
+        assert reconstructed == original, f"Expected exact roundtrip, got {reconstructed!r}"
+
+    def test_parse_project_key_lossy_with_dashes(self):
+        """parse_project_key is lossy for paths containing dashes (dashes become /)."""
+        original = "/home/user/my-project"
+        key = get_project_key(original)
+        reconstructed = parse_project_key(key)
+        # Dashes in "my-project" become "/" — this is a known limitation
+        assert reconstructed != original, "Paths with dashes should NOT roundtrip"
         assert reconstructed.startswith("/")
 
     def test_parse_project_key_adds_leading_slash(self):

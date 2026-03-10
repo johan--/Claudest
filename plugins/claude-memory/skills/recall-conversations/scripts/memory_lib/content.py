@@ -9,6 +9,22 @@ import json
 import re
 
 
+def sanitize_fts_term(term: str) -> str:
+    """Remove FTS special characters from search term.
+
+    Strips characters that are FTS operators or special syntax:
+    quotes, parentheses, asterisks, and FTS keywords.
+    Keeps alphanumeric, spaces, and basic punctuation.
+    """
+    # Remove quotes, parentheses, asterisks, and word boundaries
+    sanitized = re.sub(r'["\(\)*\-^]', '', term)
+    # Remove FTS keywords: NEAR, AND, OR, NOT (case-insensitive)
+    sanitized = re.sub(r'\b(NEAR|AND|OR|NOT)\b', '', sanitized, flags=re.IGNORECASE)
+    # Strip whitespace
+    sanitized = sanitized.strip()
+    return sanitized
+
+
 def extract_text_content(content) -> tuple[str, bool, bool, str | None]:
     """
     Extract text from message content.
