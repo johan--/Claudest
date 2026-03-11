@@ -25,21 +25,6 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 
 ---
 
-## 📦 Plugins
-
-| Plugin | Version | Skills |
-|--------|---------|--------|
-| [claude-memory](#claude-memory) | `0.8.4` | recall-conversations · extract-learnings |
-| [claude-research](#claude-research) | `0.2.2` | run-research · search-youtube |
-| [claude-coding](#claude-coding) | `0.2.2` | commit · push-pr · clean-branches · update-claudemd · make-readme · make-changelog · update-readme · setup-github-actions |
-| [claude-skills](#claude-skills) | `0.3.2` | create-skill · repair-skill · repair-agent · improve-skill · create-cli · create-agent |
-| [claude-thinking](#claude-thinking) | `0.2.2` | brainstorm |
-| [claude-content](#claude-content) | `0.4.2` | generate-image · compress-video · convert-video · make-gif · share-social · extract-audio |
-| [claude-utilities](#claude-utilities) | `0.2.2` | convert-to-markdown |
-| [claude-claw](#claude-claw) | `0.3.2` | claw-advisor · create-claw-skill |
-
----
-
 <a id="claude-memory"></a>
 
 ### 🧠 claude-memory &nbsp; ![v0.8.4](https://img.shields.io/badge/v0.8.4-blue?style=flat-square)

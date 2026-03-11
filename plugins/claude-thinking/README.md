@@ -1,6 +1,4 @@
-# claude-thinking
-
-![v0.2.2](https://img.shields.io/badge/v0.2.2-blue?style=flat-square)
+# claude-thinking ![v0.2.2](https://img.shields.io/badge/v0.2.2-blue?style=flat-square)
 
 Structured thinking tools for Claude Code. Skills that use dialogue to help you clarify, stress-test, and articulate ideas — then produce a written artifact.
 

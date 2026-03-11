@@ -1,4 +1,4 @@
-# claude-content v0.4.2
+# claude-content ![v0.4.2](https://img.shields.io/badge/v0.4.2-blue?style=flat-square)
 
 Content creation and processing tools for Claude Code. Six skills covering image generation, video manipulation, social media formatting, and audio extraction.
 
