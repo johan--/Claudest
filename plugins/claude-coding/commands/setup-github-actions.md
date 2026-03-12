@@ -57,7 +57,7 @@ Use these exact filenames to prevent duplicates across runs:
 | Workflow | Filename |
 |---|---|
 | Interactive assistant | `claude.yml` |
-| PR code review | `claude-review.yml` |
+| PR code review | `claude-code-review.yml` |
 | Issue triage | `claude-issue-triage.yml` |
 | Issue deduplication | `claude-issue-dedup.yml` |
 | CI failure auto-fix | `claude-ci-fix.yml` |
