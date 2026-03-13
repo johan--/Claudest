@@ -1,10 +1,7 @@
 ---
 name: create-output-style
-description: >
-  This skill should be used when the user asks to "create an output style", "make a writing style",
-  "build a voice", "build a persona", "make Claude sound like", "customize Claude's voice",
-  "create a coding style", "design a tone", "make an output style for writing",
-  "generate a style file". Not for changing output format (JSON, markdown, etc).
+description: Generate a persona-based output style file via guided interview
+user-invoked: true
 argument-hint: "[name] - or leave empty to interview"
 allowed-tools:
   - AskUserQuestion
@@ -47,11 +44,11 @@ Proceed to Phase 1 when persona direction is established.
 
 ## Phase 1: Generate
 
-Read `${SKILL_DIR}/references/style-architecture.md` for the generation framework. Review the example matching the current style type for target format and density:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/create-output-style/references/style-architecture.md` for the generation framework. Review the example matching the current style type for target format and density:
 
-- Character/Persona: `${SKILL_DIR}/examples/zen-minimalist.md` (~60 tokens, persona + anchors only)
-- Personal Voice: `${SKILL_DIR}/examples/whiteboard-voice.md` (~90 tokens, persona + anchors + exemplar phrases, `keep-coding-instructions: false`)
-- Coding Interaction: `${SKILL_DIR}/examples/direct-pair.md` (~80 tokens, collaboration-mode persona, `keep-coding-instructions: true`)
+- Character/Persona: `${CLAUDE_PLUGIN_ROOT}/skills/create-output-style/examples/zen-minimalist.md` (~60 tokens, persona + anchors only)
+- Personal Voice: `${CLAUDE_PLUGIN_ROOT}/skills/create-output-style/examples/whiteboard-voice.md` (~90 tokens, persona + anchors + exemplar phrases, `keep-coding-instructions: false`)
+- Coding Interaction: `${CLAUDE_PLUGIN_ROOT}/skills/create-output-style/examples/direct-pair.md` (~80 tokens, collaboration-mode persona, `keep-coding-instructions: true`)
 
 Compose the output style file following this structure:
 
