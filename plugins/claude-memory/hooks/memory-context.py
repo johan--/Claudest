@@ -24,7 +24,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "recall-conversations" / "scripts"))
 
 from memory_lib.db import get_db_path, load_settings, setup_logging
-from memory_lib.formatting import format_time, get_project_key
+from memory_lib.formatting import format_time, format_time_full, get_project_key
 
 
 def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_id: str, max_sessions: int) -> list[dict]:
@@ -93,7 +93,7 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
     branch_ids = [s["branch_db_id"] for s in filtered]
     placeholders = ",".join("?" * len(branch_ids))
     cursor.execute(f"""
-        SELECT bm.branch_id, m.role, m.content, m.timestamp
+        SELECT bm.branch_id, m.role, m.content, m.timestamp, m.tool_summary
         FROM branch_messages bm
         JOIN messages m ON bm.message_id = m.id
         WHERE bm.branch_id IN ({placeholders})
@@ -103,9 +103,9 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
 
     # Group messages by branch_id
     branch_messages = {}  # type: dict[int, list[dict]]
-    for branch_id, role, content, timestamp in cursor.fetchall():
+    for branch_id, role, content, timestamp, tool_summary in cursor.fetchall():
         branch_messages.setdefault(branch_id, []).append(
-            {"role": role, "content": content, "timestamp": timestamp}
+            {"role": role, "content": content, "timestamp": timestamp, "tool_summary": tool_summary}
         )
 
     for entry in filtered:
@@ -114,6 +114,24 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
         selected.append(entry)
 
     return selected
+
+
+def _format_tool_summary(tool_summaries: list[str | None]) -> str:
+    """Merge tool_summary JSON strings from multiple assistant messages into a compact line."""
+    merged = {}  # type: dict[str, int]
+    for raw in tool_summaries:
+        if not raw:
+            continue
+        try:
+            summary = json.loads(raw)
+            for tool, count in summary.items():
+                merged[tool] = merged.get(tool, 0) + count
+        except (json.JSONDecodeError, AttributeError):
+            continue
+    if not merged:
+        return ""
+    parts = [f"{tool}({count})" for tool, count in merged.items()]
+    return "Tools: " + ", ".join(parts)
 
 
 def build_context(sessions: list[dict]) -> str:
@@ -127,10 +145,24 @@ def build_context(sessions: list[dict]) -> str:
         if i > 0:
             lines.append("\n---\n")
 
-        # Session timeline
-        start = format_time(session["started_at"])
-        end = format_time(session["ended_at"])
-        lines.append(f"### Session: {start} -> {end}\n")
+        # Session timeline with full date and optional branch
+        start = format_time_full(session["started_at"])
+        end = format_time_full(session["ended_at"])
+        header = f"### Session: {start} -> {end}"
+        branch = session.get("git_branch")
+        if branch:
+            header += f" (branch: {branch})"
+        lines.append(header + "\n")
+
+        # Topic line from first user message
+        messages = session.get("messages", [])
+        for m in messages:
+            if m["role"] == "user" and m.get("content"):
+                topic = m["content"].strip().replace("\n", " ")
+                if len(topic) > 120:
+                    topic = topic[:120] + "..."
+                lines.append(f"**Topic:** {topic}\n")
+                break
 
         # Files modified
         files = session.get("files_modified", [])
@@ -151,27 +183,39 @@ def build_context(sessions: list[dict]) -> str:
             lines.append("")
 
         # Build exchange pairs from all messages
-        messages = session.get("messages", [])
         if not messages:
             continue
 
         exchanges = []
         current_user = None
         current_asst = []
+        current_tool_summaries = []  # type: list[str | None]
 
         for m in messages:
             if m["role"] == "user":
                 if current_user is not None:
-                    exchanges.append({"user": current_user, "asst": "\n\n".join(current_asst), "ts": m["timestamp"]})
+                    exchanges.append({
+                        "user": current_user,
+                        "asst": "\n\n".join(current_asst),
+                        "ts": m["timestamp"],
+                        "tools": list(current_tool_summaries),
+                    })
                 current_user = m["content"]
                 current_asst = []
+                current_tool_summaries = []
             elif m["role"] == "assistant" and current_user is not None:
                 cleaned = re.sub(r'\[Tool: \w+\]', '', m["content"]).strip()
                 if cleaned:
                     current_asst.append(cleaned)
+                current_tool_summaries.append(m.get("tool_summary"))
 
         if current_user is not None:
-            exchanges.append({"user": current_user, "asst": "\n\n".join(current_asst), "ts": None})
+            exchanges.append({
+                "user": current_user,
+                "asst": "\n\n".join(current_asst),
+                "ts": None,
+                "tools": list(current_tool_summaries),
+            })
 
         if not exchanges:
             continue
@@ -186,6 +230,9 @@ def build_context(sessions: list[dict]) -> str:
             if ex["asst"]:
                 lines.append(f"**[{t}] Assistant:**")
                 lines.append(ex["asst"])
+                tool_line = _format_tool_summary(ex.get("tools", []))
+                if tool_line:
+                    lines.append(tool_line)
                 lines.append("")
 
     return "\n".join(lines)

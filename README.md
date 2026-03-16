@@ -27,7 +27,7 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 
 <a id="claude-memory"></a>
 
-### 🧠 claude-memory &nbsp; ![v0.8.4](https://img.shields.io/badge/v0.8.4-blue?style=flat-square)
+### 🧠 claude-memory &nbsp; ![v0.8.5](https://img.shields.io/badge/v0.8.5-blue?style=flat-square)
 
 Conversation memory for Claude Code. Recall what happened yesterday, last week, or three weeks ago.
 
