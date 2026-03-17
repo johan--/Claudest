@@ -21,9 +21,6 @@ MAX_SKILL_NAME_LENGTH = 64
 ALLOWED_FRONTMATTER = {
     "name",
     "description",
-    "context",
-    "model",
-    "agent",
     "allowed-tools",
     "hooks",
     "user-invocable",
@@ -93,16 +90,6 @@ def validate_skill(skill_path):
             return False, f"Description too long ({len(description)} chars). Max: 1024"
         if "[TODO" in description:
             return False, "Description contains TODO placeholder - please complete it"
-
-    # Validate model if present
-    model = frontmatter.get("model")
-    if model and model not in ("haiku", "sonnet", "opus"):
-        return False, f"Invalid model '{model}'. Must be: haiku, sonnet, or opus"
-
-    # Validate context if present
-    context = frontmatter.get("context")
-    if context and context != "fork":
-        return False, f"Invalid context '{context}'. Only 'fork' is supported"
 
     # Check body has content
     body = content[match.end():].strip()

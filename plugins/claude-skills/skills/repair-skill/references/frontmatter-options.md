@@ -23,46 +23,6 @@ Audit rules for description quality:
 - **Negative triggers:** In crowded domains (multiple skills with overlapping concerns), include "Not for X" or "Don't use for Y" to sharpen the routing decision boundary.
 - **3–5 varied trigger phrases minimum.** Single-phrase descriptions have high miss rates. Include naive phrasing from a user who has never heard of this skill.
 
-### `model` (enum)
-
-| Value | When to use |
-|-------|-------------|
-| `haiku` | Single-step operations, formatting, simple lookups, anything token-cheap and time-sensitive |
-| `sonnet` | Balanced default for most workflows; multi-step reasoning without deep analysis |
-| `opus` | Complex multi-step reasoning, architectural decisions, deep analysis across large codebases |
-| `inherit` | Default when field is omitted — uses the model of the current conversation |
-
-Audit rule: `opus` is only justified when the task genuinely requires deep reasoning that
-`sonnet` would struggle with. Most skills should omit `model:` entirely and inherit.
-`haiku` is underused — prefer it for lookup-heavy, low-judgment steps.
-
-**Constraint:** Never set `model: haiku` on skills that use `AskUserQuestion`. Haiku cannot reliably populate the nested AskUserQuestion schema (questions array > options with label + description > header + multiSelect), causing questions to render empty in the UI. If a skill needs user decisions, it must use at least `sonnet` or inherit. *Critical if violated.*
-
-### `context` (enum)
-
-| Value | When to use |
-|-------|-------------|
-| `fork` | Only valid value. Runs the skill in an isolated sub-agent. |
-
-Use `context: fork` only when ALL three conditions hold: (1) outputs are predictable and
-deterministic — not open-ended analysis or conversation; (2) the primary deliverable is a
-side effect the user doesn't need to read inline (file written, commit created, PR opened);
-(3) the skill has no `AskUserQuestion`. Do not use it when the skill is interactive or when
-the output itself is what the user asked for (reports, audits, research, transcripts, advice).
-`agent:` is optional — omitting it defaults to `general-purpose`.
-
-### `agent` (string)
-
-Optional. Only valid with `context: fork`. Routes execution to a specialized agent type.
-Defaults to `general-purpose` when omitted.
-
-| Value | Capabilities |
-|-------|-------------|
-| `Explore` | Codebase search, file discovery, read-only analysis. No write tools. |
-| `Plan` | Architecture and design planning. Read-only. Outputs plans for approval. |
-| `general-purpose` | Full tool access including edit, write, bash. |
-| `<custom-name>` | Any agent defined in `.claude/agents/` in the current project. |
-
 ### `allowed-tools` (list)
 
 Restricts which tools the skill can use. Default is unrestricted. Specifying this list

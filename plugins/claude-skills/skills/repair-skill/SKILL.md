@@ -106,20 +106,10 @@ Refer to `frontmatter-options.md` for the complete field catalog, model selectio
 and tool selection framework.
 
 **Violations:**
-- Is `model: opus` set for a task that `sonnet` would handle? Overuse wastes cost.
 - Does the skill have unrestricted `Bash` when a scoped pattern (`Bash(git:*)`) would work?
 - Does the skill have tools in `allowed-tools` it never uses? Dead entries add noise.
-- Is `agent:` set without `context: fork`? The `agent:` field is only valid alongside `context: fork`.
-  Note: `context: fork` without `agent:` is valid — it defaults to `general-purpose`.
 
 **Gaps:**
-- Does the skill do heavy analysis that would benefit from `model: opus`?
-- Is `context: fork` absent when it should be present, or present when it shouldn't be?
-  Add it only when ALL three hold: (1) outputs are predictable and deterministic — not
-  open-ended analysis or conversation; (2) the primary deliverable is a side effect the user
-  doesn't need to read inline (file written, commit created, PR opened); (3) the skill has no
-  `AskUserQuestion`. Do not add it when the skill is interactive or when the output itself is
-  what the user asked for (reports, audits, research, transcripts, advice).
 - Does the skill invoke other skills or spawn agents without `Skill` or `Task` in `allowed-tools`?
 - Does the skill require user decisions mid-workflow but lacks `AskUserQuestion` in `allowed-tools`?
 - Does the skill read a file path from `$1` but uses a `Read` tool call instead of `@$1`
@@ -345,8 +335,7 @@ After applying improvements, briefly explain:
 - **What was added and why** — "Created references/options.md and deferred the option
   catalog because SKILL.md was 420 lines and the catalog is only needed for the
   configuration sub-task"
-- **What was left unchanged and why** — "Left `model` unset — workload doesn't justify
-  overriding the default"
+- **What was left unchanged and why** — "`hooks` left unset — no lifecycle validation needed"
 - **What remains for the user to address** — "The examples/ gap requires domain knowledge
   to fill; a placeholder directory was created"
 

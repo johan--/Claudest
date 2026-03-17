@@ -188,6 +188,4 @@ Use this to identify what a skill *would benefit from* adding, not just what's w
 
 **Would additional frontmatter fields help?**
 - [ ] Does the skill accept a file path argument but lack `argument-hint`?
-- [ ] Does the skill do heavy analysis that would benefit from `model: opus`?
-- [ ] Does the skill produce heavy output that would pollute main context (`context: fork`)?
 - [ ] Does the skill need user decisions mid-workflow but lacks `AskUserQuestion` in `allowed-tools`?

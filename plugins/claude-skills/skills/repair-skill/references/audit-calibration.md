@@ -58,21 +58,3 @@ invocation → major violation (deterministic script reference is vague).
 `Use Task tool with subagent_type=claude-code-guide: "List current frontmatter options"`
 → idiomatic instruction to Claude to use a built-in tool; not a script reference.
 
----
-
-## D2 / `context: fork` for interactive skills
-
-Do not flag `context: fork` absent as major for skills that have interactive elements:
-AskUserQuestion calls, "Proceed?" confirmation prompts, or interview phases in Phase 1.
-These depend on conversation thread continuity — a forked skill cannot surface interactive
-prompts back to the user.
-
-Only recommend `context: fork` when the skill is non-interactive AND produces substantial
-output that would pollute the main context (e.g., a batch analysis skill that generates a
-large report with no mid-workflow user decisions).
-
-**Flag this:** Skill is a read-only research tool with no user interactions that returns
-a 200-line formatted report → major gap (context: fork would keep main thread clean).
-
-**Do not flag this:** Skill has "Before writing: Proceed? [y/n]" prompts in Phase 3
-→ fork would break the confirmation flow; omitting context: fork is correct here.

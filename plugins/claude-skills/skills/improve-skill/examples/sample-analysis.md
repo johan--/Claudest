@@ -36,16 +36,9 @@ mentions it. The user who doesn't know about `repair-skill` misses a natural nex
 
 ### 2b — Live Doc Validation
 
-Claim: `context: fork` requires `agent:` to be set.
+All frontmatter field names verified against current docs: ✓
 
-Verification (via claude-code-guide): Current docs show `agent:` is optional when
-`context: fork` is set. The claim in `frontmatter-options.md` (the reference file loaded by
-create-skill) overstates the requirement.
-
-**Drift severity: medium** — a user following this instruction wouldn't produce broken output
-(setting `agent:` is harmless), but they'd add an unnecessary field.
-
-All other frontmatter field names verified against current docs: ✓
+No drift found in this example.
 
 ### 2c — Feature Adjacency Scan
 
@@ -66,12 +59,12 @@ Implementation effort: one AskUserQuestion in Phase 1.
 Trigger scenarios, Inputs/outputs, Complexity, Execution needs). A user who doesn't know
 skill development best practices doesn't know what a "good" answer looks like. The
 interview gathers information but doesn't guide it — a user who says "complexity: high"
-because their problem feels hard might not realize this maps to `context: fork`.
+because their problem feels hard might not realize how this maps to frontmatter choices.
 
 **Consequential silent decision:** In Phase 2 Step 5 (delegation check), the skill
 instructs Claude to scan for existing resources before finalizing. But if an existing skill
 partially covers the requirement, Claude decides silently whether to extend it or create a
-new one. This is a significant fork the user would want to weigh in on.
+new one. This is a significant decision the user would want to weigh in on.
 
 ---
 
@@ -98,15 +91,9 @@ UX IMPROVEMENTS (friction in the current workflow)
 ────────────────────────────────────────────────────
   [2d] Phase 1 interview asks open-ended questions but doesn't guide what good answers
        look like. Users unfamiliar with skill development give answers that don't map
-       to the right frontmatter choices (e.g., complexity ≠ context: fork).
+       to the right frontmatter choices (e.g., complexity ≠ allowed-tools scope).
        Fix: Add one example per interview question showing how the answer shapes the
        generated skill.
-
-ACCURACY FIXES (factual drift from current docs)
-──────────────────────────────────────────────────
-  [2b] frontmatter-options.md states context: fork requires agent: — current docs show
-       agent: is optional.
-       Fix: Update the claim in references/frontmatter-options.md.
 
 EFFICIENCY GAINS (same outcome with less token cost)
 ──────────────────────────────────────────────────────

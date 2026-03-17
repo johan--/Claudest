@@ -18,11 +18,6 @@ name: identifier                    # Required for skills
 description: >                      # How it's described/triggered
   [See description patterns below]
 
-# Execution modifiers
-model: sonnet                       # haiku (fast), sonnet (balanced), opus (complex)
-context: fork                       # Run in isolated sub-agent, preserves main context
-agent: Explore                      # Route to specialized agent (Explore, Plan, custom)
-
 # Tool access
 allowed-tools:                      # Restrict available tools
   - Read
@@ -89,12 +84,6 @@ description: Deploy to staging environment
 ## Execution Modifiers
 
 Use these when the default behavior isn't sufficient:
-
-- **`context: fork`** — Run in isolated sub-agent. Add only when ALL three hold: (1) outputs are predictable and deterministic; (2) the deliverable is a side effect the user doesn't read inline (file written, commit created, PR opened); (3) the skill has no `AskUserQuestion`. Do not use when the skill is interactive or when the output itself is what the user asked for (reports, research, advice). `agent:` is optional — omitting it defaults to `general-purpose`.
-
-- **`agent: [type]`** — Optional. Route to a specialized agent. Examples: `Explore` for codebase search, `Plan` for architecture decisions, or custom agents you've defined. Only valid with `context: fork`.
-
-- **`model: [level]`** — Override the model. Valid values: `haiku` (fast, cheap, simple tasks), `sonnet` (balanced default), `opus` (complex reasoning). Omit to inherit from the current conversation. **Constraint:** never use `haiku` on skills with `AskUserQuestion` — Haiku cannot reliably populate the nested question schema, causing questions to render empty in the UI.
 
 - **`hooks`** — Run scripts before/after tool use, scoped to this skill's lifecycle. Useful for validation, logging, or side effects.
 
