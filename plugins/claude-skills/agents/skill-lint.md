@@ -1,9 +1,8 @@
 ---
 name: skill-lint
 description: |
-  Use this agent when a skill or command has just been created or improved and needs
-  structural linting before delivery. Runs the repair-skill audit dimensions against
-  the output and auto-applies critical/major fixes.
+  Use this agent when a skill needs structural linting after creation or improvement.
+  Auto-applies critical and major fixes from the repair-skill audit dimensions.
 
   <example>
   Context: A skill was just created or improved and needs structural validation.
