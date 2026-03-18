@@ -1,13 +1,19 @@
 ---
 name: generate-image
-description: Generates and edits images via Nano Banana (Gemini). Triggers on any intent to create, generate, edit, or manipulate an image — including "make me a logo", "edit this photo", "combine these images", "style transfer", "product mockup", "use nano banana", "design a hero banner", "mock up this layout", "make a sticker". Also triggers on ambiguous visual requests like "visualize this" or "make something visual". Covers t2i, i2i, and multi-reference composition.
+description: >
+  This skill should be used when the user asks to "generate an image",
+  "create a picture", "make me a logo", "edit this image", "combine
+  these images", "make a sticker", "product mockup", "use nano banana",
+  or any image creation/manipulation request. Covers t2i, i2i, and
+  multi-reference composition. Not for HTML/CSS mockups, data
+  visualizations, diagrams, or coded UI components.
 allowed-tools:
   - Bash(uv:*)
   - Read
   - AskUserQuestion
 ---
 
-Generate and edit images using Nano Banana (Gemini 3.1 Flash Image) and Nano Banana Pro (Gemini 3 Pro Image). Nano Banana is the default (fast, high-volume). Nano Banana Pro is available for maximum quality. Requires `GEMINI_API_KEY` environment variable and `uv` package manager.
+Requires `GEMINI_API_KEY` environment variable and `uv` package manager.
 
 ## Workflow
 

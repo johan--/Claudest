@@ -152,7 +152,7 @@ Some of the best thinking happens in conversation, but unstructured conversation
 
 <a id="claude-content"></a>
 
-### 🎬 claude-content &nbsp; ![v0.4.3](https://img.shields.io/badge/v0.4.3-blue?style=flat-square)
+### 🎬 claude-content &nbsp; ![v0.4.4](https://img.shields.io/badge/v0.4.4-blue?style=flat-square)
 
 Content creation and processing tools for Claude Code. Six skills covering image generation and the full video/audio manipulation workflow.
 
