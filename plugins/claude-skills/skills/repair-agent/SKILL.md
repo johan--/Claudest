@@ -4,7 +4,7 @@ description: >
   This skill should be used when the user asks to "repair an agent", "audit an agent",
   "fix my agent", "review agent quality", "check if my agent is well-written", "diagnose
   agent problems", "what's wrong with this agent", "improve this agent", or "what's wrong
-  with this agent file".
+  with this agent file". Not for skills — use repair-skill.
 argument-hint: "<path-to-agent-file>"
 ---
 
@@ -152,7 +152,7 @@ Refer to `agent-anatomy.md` for voice conventions and the gold standard structur
 
 ### Dimension 4 — Agentic vs Deterministic Split
 
-**Load `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/script-patterns.md` before
+**Load `${CLAUDE_PLUGIN_ROOT}/skills/create-skill/references/script-patterns.md` before
 auditing this dimension.** The same five signal patterns apply to agents as to skills.
 
 Agents mix LLM-guided reasoning (agentic) and deterministic operations. The split should

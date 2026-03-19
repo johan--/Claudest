@@ -5,7 +5,7 @@ description: >
   "fix my skill", "review skill quality", "check if my skill is well-written",
   "diagnose skill problems", "what's wrong with this skill", or wants structural
   correctness fixes. Not for adding features or improving effectiveness — use
-  improve-skill for that.
+  improve-skill for that. Not for agents — use repair-agent.
 argument-hint: "<path-to-skill-directory-or-SKILL.md>"
 ---
 

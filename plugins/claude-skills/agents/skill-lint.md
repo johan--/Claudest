@@ -2,7 +2,6 @@
 name: skill-lint
 description: |
   Use this agent when a skill needs structural linting after creation or improvement.
-  Auto-applies critical and major fixes from the repair-skill audit dimensions.
 
   <example>
   Context: A skill was just created or improved and needs structural validation.
@@ -51,11 +50,13 @@ verbosity, anatomy completeness, and agentic/deterministic split.
 1. Receive the skill path from the caller. Read the SKILL.md file and catalog sibling
    directories (references/, scripts/, examples/, assets/).
 
-2. Load the three audit reference files from the repair-skill:
+2. Load the four audit reference files:
    - `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/skill-anatomy.md`
    - `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/frontmatter-options.md`
    - `${CLAUDE_PLUGIN_ROOT}/skills/repair-skill/references/audit-calibration.md` — read this
      before running any dimension; it lists known false-positive patterns to avoid.
+   - `${CLAUDE_PLUGIN_ROOT}/skills/create-skill/references/script-patterns.md` — five signal
+     patterns for script candidates. Required for Dimension 4.
 
 3. Run the 7-dimension structural audit. For each finding, record: dimension code,
    finding type (violation/gap/improvement), severity (critical/major/minor), what is
