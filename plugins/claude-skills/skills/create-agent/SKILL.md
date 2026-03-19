@@ -4,7 +4,7 @@ description: >
   This skill should be used when the user asks to "create an agent", "make an agent",
   "write an agent", "build a subagent", "add an agent to a plugin", "design an autonomous agent",
   "generate an agent file", "write a system prompt for an agent", "what frontmatter does an agent need",
-  "create a specialized agent".
+  "create a specialized agent". Not for skills or commands — use create-skill.
 argument-hint: "[name] - or leave empty to interview"
 ---
 

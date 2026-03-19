@@ -3,9 +3,9 @@ name: improve-skill
 description: >
   This skill should be used when the user asks to "improve a skill", "make this skill better",
   "add features to a skill", "this skill is missing something", "upgrade my skill", "what's
-  missing from this skill", "improve how the skill works step by step", "the skill doesn't do X",
-  "make this more useful", "the skill isn't working well for me", "can this skill do more", or
-  wants to improve skill effectiveness rather than structural correctness.
+  missing from this skill", "the skill doesn't do X", "make this more useful", or wants to
+  improve skill effectiveness rather than structural correctness. Not for structural fixes —
+  use repair-skill. Not for agents.
 argument-hint: <path-to-skill-directory-or-SKILL.md>
 allowed-tools:
   - Read

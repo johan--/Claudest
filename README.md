@@ -108,7 +108,7 @@ Every coding session involves the same decisions: what belongs in one commit vs 
 
 <a id="claude-skills"></a>
 
-### ✍️ claude-skills &nbsp; ![v0.5.7](https://img.shields.io/badge/v0.5.7-blue?style=flat-square)
+### ✍️ claude-skills &nbsp; ![v0.5.8](https://img.shields.io/badge/v0.5.8-blue?style=flat-square)
 
 Skill authoring tools for Claude Code. Six complementary skills that cover the full lifecycle: generate skills, generate agents, audit, improve, repair agents, and CLI design.
 
