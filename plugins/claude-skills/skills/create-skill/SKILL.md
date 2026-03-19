@@ -102,7 +102,7 @@ Brief overview (1-2 sentences).
 Summarize this pull request...
 ```
 
-These commands run when the skill is invoked. The model sees only the output — no tool calls needed. Use this pattern whenever a skill's workflow starts by gathering external state (git, APIs, env vars, file trees).
+These commands run when the skill is invoked. The model sees only the output — no tool calls needed. Use this for infallible probes (git status, env vars, file trees, process output) where failure is rare and the output is informational. Do not use for commands that may fail or need exit-code branching — those require Bash tool calls so the model can handle errors.
 
 ### Step 5 — Script opportunity scan
 

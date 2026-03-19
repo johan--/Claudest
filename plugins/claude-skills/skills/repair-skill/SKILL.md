@@ -119,7 +119,8 @@ and tool selection framework.
   inline injection? A tool round-trip is being wasted. *Minor.*
 - Could real-time data (git status, env vars, file tree) be injected using dynamic content
   syntax (bang + backtick-wrapped command) instead of a tool call? *Major when the skill's
-  workflow begins by gathering external state; Minor for incidental mid-workflow lookups.*
+  workflow begins with infallible probes (git branch, file tree, env vars) that never need
+  error handling; Minor for commands that may fail or need exit-code branching.*
 
   **Before (wastes tool round-trips):**
   ```
