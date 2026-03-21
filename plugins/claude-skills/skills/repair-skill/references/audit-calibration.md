@@ -58,3 +58,20 @@ invocation → major violation (deterministic script reference is vague).
 `Use Task tool with subagent_type=claude-code-guide: "List current frontmatter options"`
 → idiomatic instruction to Claude to use a built-in tool; not a script reference.
 
+---
+
+## D5 / Code blocks that assign workflow variables
+
+Code blocks that assign variables (`BASE=...`, `BRANCH=$(...)`) used by later steps are
+NOT purely illustrative — they establish workflow state. Do not flag these as "code blocks
+collapsible to prose" under D5. Collapsing them without preserving the bindings introduces
+unbound-variable bugs in downstream steps.
+
+**Flag this:** Code block assigns `BRANCH=$(git rev-parse ...)` and is collapsed to
+"Check the current branch" without binding `$BRANCH` anywhere → major D5 violation
+(prose collapse lost variable binding).
+
+**Do not flag this:** Code block assigns `BRANCH=$(git rev-parse ...)` and a later prose
+preamble says "Derive: `BRANCH` = current branch from pre-flight injection" → the binding
+is preserved; the collapse is valid.
+

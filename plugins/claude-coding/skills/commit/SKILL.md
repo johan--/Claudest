@@ -1,13 +1,10 @@
 ---
 name: commit
-description: |
-  This skill should be used when the user says "commit my changes", "commit this", "git commit", "save my work", "stage and commit", or mentions committing code. Also triggers on "create a commit" or "commit what I've done".
+description: This skill should be used when the user says "commit my changes", "commit this", "create a commit", "git commit", "save my work", or mentions committing code.
 argument-hint: "[push]"
 allowed-tools:
   - Bash(git:*)
-  - Bash(cargo:*)
-  - Bash(npm:*)
-  - Bash(ruff:*)
+  - Bash(python3:*)
   - AskUserQuestion
 ---
 
@@ -19,22 +16,24 @@ Analyze uncommitted changes and create well-organized commits using conventional
 
 ### 1. Discover Changes
 
-```bash
-git status --porcelain
-git diff --stat
-```
+Current repo state (injected at invocation — no tool calls needed):
 
-If no changes, report "Nothing to commit" and stop.
+- Status: !`git status --porcelain`
+- Diff stats: !`git diff --stat`
+
+If no changes, report "Nothing to commit" and stop. If not in a git repository, report and stop.
 
 ### 2. Stage Files
 
 Run `git add -A` to stage all changes.
 
-**Exclude temporary files** matching: `scratch.*`, `temp.*`, `debug.*`, `playground.*`, `*.log`, `dist/`, `build/`, `target/`, `node_modules/`.
+**Exclude generated or ephemeral files** that should never be version-controlled: `scratch.*`, `temp.*`, `debug.*`, `playground.*`, `*.log`, `dist/`, `build/`, `target/`, `node_modules/`, `__pycache__/`.
 
-If temporary files detected:
+If such files detected:
 1. Unstage with `git reset HEAD <file>`
 2. Ask user if they want to add to .gitignore
+
+Proceed when all intended files are staged and ephemeral files are excluded.
 
 ### 3. Analyze Commit Boundaries
 
@@ -53,6 +52,8 @@ Each commit should represent one logical change because atomic commits enable `g
 If multiple concerns: use `git reset HEAD` then `git add <specific-files>` for each group. Commit foundational changes first.
 
 **Handle renames (R status):** When splitting, add BOTH old and new paths. Git detects renames by similarity scoring across the old/new pair — staging only the new path causes git to log a delete + add, losing rename history.
+
+Proceed when every changed file is assigned to exactly one commit group.
 
 ### 4. Validate (if available)
 
@@ -84,9 +85,10 @@ Use conventional commit format:
 **Rules:**
 - Lowercase, no period, imperative mood
 - Max 72 chars for subject
-- NO Co-authored-by trailers
-- NO AI attribution
+- NO Co-authored-by trailers, NO AI attribution — these pollute `git log` and break downstream tooling that greps commit metadata
 - NO emojis
+
+Proceed when the commit message is drafted and matches the repo's existing style.
 
 ### 6. Push (only if requested)
 
@@ -96,12 +98,3 @@ If user mentions "push" or arguments contain "push", run `git push`. If push fai
 
 One line per commit (hash + message). If temporary files were excluded, list them as bullets below.
 
-## Scripts
-
-`scripts/validate.py` — detects project type and runs the appropriate linter. Invoked in Step 4.
-
-```bash
-# Usage
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/validate.py .
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/commit/scripts/validate.py /path/to/project --output json
-```

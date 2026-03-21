@@ -68,6 +68,12 @@ This step catches routing misses before the rest of the skill is built. Proceed 
 - No "When to Use This Skill" section — body loads only after triggering; routing guidance there is never read by the routing decision
 - Avoid headers deeper than H3 — deep nesting signals content that belongs in `references/`, not `SKILL.md`
 - Use bang-backtick syntax for dynamic context injection when real-time data (git status, file list, env vars) improves the skill without requiring a tool call
+- **Preserve variable bindings when collapsing code blocks to prose.** Code blocks serve
+  two purposes: illustrating an operation and establishing workflow state. When a code
+  block assigns variables (`BASE=...`, `BRANCH=...`) that later steps reference, collapsing
+  it to prose without preserving the bindings leaves downstream `$VAR` references unbound.
+  Add a "derive working variables" preamble that explicitly binds each variable in prose
+  before the steps that use them
 
 Both skills and commands follow the same body pattern:
 

@@ -215,6 +215,12 @@ Refer to the size invariants table in `skill-anatomy.md` to calibrate severity.
   "generally speaking". Replace with direct imperatives or remove. *Minor per instance.*
 - **Code blocks illustrating a principle stateable in one sentence** — a good/bad YAML
   contrast often collapses to one intensional rule. *Major if pattern is frequent.*
+- **Code blocks collapsed to prose that lose variable bindings** — a code block that
+  assigns workflow variables (`BASE=...`, `BRANCH=...`) used by later steps serves two
+  purposes: illustrating the operation AND establishing state. Collapsing it to prose
+  without preserving the bindings leaves downstream `$VAR` references unbound. When
+  collapsing, add a "derive working variables" preamble that explicitly binds each
+  variable in prose. *Major per lost binding.*
 - **Repeated guidance across sections** — the same rule in a "Best Practices" section and
   a "Common Mistakes" section. Consolidate to one location. *Minor.*
 - **"When to Use This Skill" section in the body** — body loads only after triggering;
@@ -248,6 +254,11 @@ each phase. Audit for broken workflow *and* for missing structure that would hel
 - Does the skill handle missing, ambiguous, or malformed input?
 
 **Gaps:**
+- **Variable continuity:** Does every `$VAR` referenced in a step have an explicit binding
+  in an earlier step or a pre-flight/preamble section? Scan all `$VARNAME` tokens in the
+  skill body and trace each back to its origin. An unbound variable is a workflow break —
+  the agent either halts on an invalid command or silently substitutes an empty string.
+  *Major per unbound variable.*
 - Is there a delivery phase that tells Claude what to produce and in what format? Many
   skills describe the process clearly but leave the output format implicit. *Major if absent.*
 - Would a validation checklist at the end of the workflow catch errors that prose

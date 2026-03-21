@@ -61,6 +61,7 @@ Run after all improvements are applied:
 - [ ] Instructions are intensional (rule + reasoning), not purely extensional
 - [ ] Agentic steps have explicit outcome criteria
 - [ ] Deterministic operations are scripted, not inlined
+- [ ] Variables referenced in later steps (`$VAR`) are bound in an earlier step or pre-flight section
 
 **Progressive Disclosure:**
 - [ ] SKILL.md under 500 lines; invocation-selective detail in `references/`
