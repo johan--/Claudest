@@ -42,4 +42,5 @@ Match by keywords and intent. If multiple types match, pick the one that best ca
 2. Take the top N personas from that type's priority order
 3. If Advocate is not in the top N, replace the last persona with Advocate (unless `--exclude advocate`)
 4. Apply `--include` overrides: add named personas, bumping the list to N+extras
-5. Apply `--exclude` overrides: remove named personas, do not backfill
+5. Apply `--exclude` overrides: remove named personas
+6. Enforce minimum floor: if fewer than 2 personas remain, backfill from the next-ranked personas in the priority order until the council has 2

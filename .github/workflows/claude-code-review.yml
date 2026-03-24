@@ -53,8 +53,8 @@ jobs:
             - SQLite connections must use WAL mode and `busy_timeout = 5000`.
 
             SKILL FILES (SKILL.md)
-            - Frontmatter must include: `name`, `description`, `triggers` (array), `version`.
-            - Description must be short (under 120 chars) — verbose descriptions pollute the agent's context window.
+            - Frontmatter must include: `name`, `description`.
+            - Description should be concise (under 200 chars preferred) — verbose descriptions pollute the agent's context window.
             - Use imperative voice throughout. Terse phrasing — every token costs budget.
             - Scripts must be referenced via `$CLAUDE_PLUGIN_ROOT/skills/<name>/scripts/`, not `~/.claude/skills/`.
             - No duplication of rules across files — one authoritative home per rule.

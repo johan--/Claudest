@@ -136,7 +136,7 @@ All six skills share a `references/` library: a skill anatomy gold standard, a c
 
 <a id="claude-minds"></a>
 
-### 🧠 claude-minds &nbsp; ![v0.3.1](https://img.shields.io/badge/v0.3.1-blue?style=flat-square)
+### 🧠 claude-minds &nbsp; ![v0.3.2](https://img.shields.io/badge/v0.3.2-blue?style=flat-square)
 
 Structured thinking and multi-perspective deliberation tools for Claude Code. Single-agent dialogue for clarifying ideas, and multi-agent councils for stress-testing decisions from multiple cognitive frames.
 

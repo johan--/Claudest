@@ -4,7 +4,7 @@ After all council agents return their positions, synthesize using these 7 steps.
 
 ## Step 1 — Map Consensus
 
-Identify findings where 3+ agents agree (or 2/2 in quick mode). These are high-confidence conclusions. State them as facts, not as "the agents agreed that..." Attribute only when a specific agent provided unique evidence.
+Identify findings where a majority of agents agree: 2/2 in quick mode, 2+/3 in 3-persona councils, 3+/4 in standard mode, 4+/6 in full mode. These are high-confidence conclusions. State them as facts, not as "the agents agreed that..." Attribute only when a specific agent provided unique evidence.
 
 ## Step 2 — Identify Tensions
 

@@ -20,7 +20,7 @@ Extract the question from `$ARGUMENTS`. Parse flags:
 - `--quick` → 2 perspectives
 - (default, no flag) → 4 perspectives
 - `--full` → all 6 perspectives
-- `--deep` → use Opus model for agents instead of Sonnet
+- `--deep` → use Opus model for spawned agents (orchestrator model unchanged)
 - `--include name,name` → force-include specific personas
 - `--exclude name,name` → force-exclude specific personas
 
@@ -32,7 +32,7 @@ Load `@references/classification.md`. Pattern-match the question's keywords and 
 
 ## Step 3 — Select Personas
 
-From `@references/classification.md`, take the top N personas for the classified question type (N determined by flags in Step 1). Advocate is always included unless explicitly `--exclude advocate`. Apply any `--include`/`--exclude` overrides.
+From `@references/classification.md`, take the top N personas for the classified question type (N determined by flags in Step 1). Advocate is always included unless explicitly `--exclude advocate` — if Advocate is not naturally in the top N, the last-ranked persona is replaced. Apply any `--include`/`--exclude` overrides. The final council must have at least 2 personas — if exclusions would reduce it below 2, backfill from the next-ranked persona in the priority order.
 
 Announce to the user:
 - The classified question type
