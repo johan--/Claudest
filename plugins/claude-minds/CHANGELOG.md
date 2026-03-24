@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-24
+
+### Added
+- council skill: multi-perspective deliberation with 6 cognitive personas (Architect, Skeptic, Pragmatist, Innovator, Advocate, Strategist)
+- Adaptive question classification maps question type to most relevant personas
+- Research-first instruction — agents investigate codebase files before forming positions
+- Dialectical synthesis: consensus mapping, tension resolution, blind spot detection, confidence map
+- /council command with flags: --quick (2), default (4), --full (6), --deep (Opus), --include/--exclude
+- Reference files: perspectives.md, classification.md, synthesis.md, output-format.md
+
+### Changed
+- Renamed plugin from claude-thinking to claude-minds
+- Updated description to reflect both brainstorm and council capabilities
+- Version bump 0.2.2 → 0.3.0 (breaking: install command changes)
+
 ## [0.2.2] - 2026-03-10
 
 ### Changed

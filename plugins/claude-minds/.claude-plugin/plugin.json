@@ -1,0 +1,19 @@
+{
+  "name": "claude-minds",
+  "version": "0.3.2",
+  "description": "Structured thinking and multi-perspective deliberation tools",
+  "author": {
+    "name": "Samarth Gupta"
+  },
+  "keywords": [
+    "thinking",
+    "interview",
+    "reasoning",
+    "decisions",
+    "brainstorm",
+    "council",
+    "perspectives",
+    "deliberation",
+    "multi-agent"
+  ]
+}

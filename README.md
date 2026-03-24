@@ -134,18 +134,18 @@ All six skills share a `references/` library: a skill anatomy gold standard, a c
 
 ---
 
-<a id="claude-thinking"></a>
+<a id="claude-minds"></a>
 
-### 🤔 claude-thinking &nbsp; ![v0.2.2](https://img.shields.io/badge/v0.2.2-blue?style=flat-square)
+### 🧠 claude-minds &nbsp; ![v0.3.2](https://img.shields.io/badge/v0.3.2-blue?style=flat-square)
 
-Structured thinking tools for Claude Code. Skills that use dialogue to help you clarify, stress-test, and articulate ideas, then produce a written artifact.
+Structured thinking and multi-perspective deliberation tools for Claude Code. Single-agent dialogue for clarifying ideas, and multi-agent councils for stress-testing decisions from multiple cognitive frames.
 
-Some of the best thinking happens in conversation, but unstructured conversation wanders. These skills provide just enough framework to keep the dialogue productive: domain-calibrated questioning intensity, saturation detection so it knows when to stop, and structured output so the results are reusable.
+`brainstorm` conducts an in-depth interview calibrated to the domain — adversarial probing for strategy, gentle exploration for personal decisions, Socratic depth for abstract topics. Detects saturation after 4+ rounds of recurring themes and produces a synthesis document with key themes, decisions, and open questions.
 
-`brainstorm` conducts an in-depth interview calibrated to the domain — adversarial probing for strategy, gentle exploration for personal decisions, Socratic depth for abstract topics. Detects saturation after 4+ rounds of recurring themes and produces a synthesis document (spec, brief, decision doc, reflection) with key themes, decisions, open questions, and constraints. User quotes are woven into the synthesis where apt, never dumped as raw transcript.
+`council` spawns parallel agents with distinct cognitive personas (Architect, Skeptic, Pragmatist, Innovator, Advocate, Strategist) to deliberate on a question. Each agent investigates relevant codebase files before forming a position. A dialectical synthesis resolves consensus, tensions, blind spots, and produces an opinionated verdict with next steps.
 
 ```
-/plugin install claude-thinking@claudest
+/plugin install claude-minds@claudest
 ```
 
 ---
