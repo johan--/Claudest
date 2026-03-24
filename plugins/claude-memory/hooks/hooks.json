@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/memory-setup.py"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run.sh\" memory-setup.py"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/memory-context.py"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run.sh\" memory-context.py"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/memory-sync.py"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run.sh\" memory-sync.py"
           }
         ]
       }
