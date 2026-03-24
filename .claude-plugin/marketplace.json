@@ -36,10 +36,10 @@
       "source": "./plugins/claude-coding"
     },
     {
-      "name": "claude-minds",
+      "name": "claude-thinking",
       "description": "Structured thinking and multi-perspective deliberation tools",
       "version": "0.3.2",
-      "source": "./plugins/claude-minds"
+      "source": "./plugins/claude-thinking"
     },
     {
       "name": "claude-content",

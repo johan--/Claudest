@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-03-24
+
+### Changed
+- Reverted plugin name from claude-minds back to claude-thinking to avoid cache migration issues for existing users
+
 ## [0.3.0] - 2026-03-24
 
 ### Added
@@ -16,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reference files: perspectives.md, classification.md, synthesis.md, output-format.md
 
 ### Changed
-- Renamed plugin from claude-thinking to claude-minds
+- Renamed plugin from claude-thinking to claude-minds (reverted in 0.3.3)
 - Updated description to reflect both brainstorm and council capabilities
 - Version bump 0.2.2 → 0.3.0 (breaking: install command changes)
 

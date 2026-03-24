@@ -1,4 +1,4 @@
-# claude-minds ![v0.3.2](https://img.shields.io/badge/v0.3.2-blue?style=flat-square)
+# claude-thinking ![v0.3.2](https://img.shields.io/badge/v0.3.2-blue?style=flat-square)
 
 Structured thinking and multi-perspective deliberation tools for Claude Code. Single-agent dialogue for clarifying ideas, and multi-agent councils for stress-testing decisions from multiple cognitive frames.
 
@@ -10,7 +10,7 @@ Some of the best thinking happens in conversation, but unstructured conversation
 
 ```
 /plugin marketplace add gupsammy/claudest
-/plugin install claude-minds@claudest
+/plugin install claude-thinking@claudest
 ```
 
 ## Skills
