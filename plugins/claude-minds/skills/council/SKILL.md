@@ -5,7 +5,6 @@ description: >
   "multiple viewpoints", "council on this", "devil's advocate", "stress test this idea",
   "red team this", "poke holes in", "second opinion on", "what am I missing",
   or wants multi-perspective analysis of a decision, design, or strategy.
-model: sonnet
 allowed-tools: [Agent, Read, Glob, Grep, AskUserQuestion]
 argument-hint: "[question] --quick|--full|--deep|--include name,name|--exclude name,name"
 ---

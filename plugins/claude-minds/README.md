@@ -1,4 +1,4 @@
-# claude-minds ![v0.3.0](https://img.shields.io/badge/v0.3.0-blue?style=flat-square)
+# claude-minds ![v0.3.1](https://img.shields.io/badge/v0.3.1-blue?style=flat-square)
 
 Structured thinking and multi-perspective deliberation tools for Claude Code. Single-agent dialogue for clarifying ideas, and multi-agent councils for stress-testing decisions from multiple cognitive frames.
 
