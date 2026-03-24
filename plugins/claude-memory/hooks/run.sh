@@ -3,7 +3,7 @@
 # for native python.exe and resolves the Python interpreter.
 set -e
 
-TARGET="${CLAUDE_PLUGIN_ROOT}/hooks/${1:?run.sh: missing argument}"
+TARGET="${CLAUDE_PLUGIN_ROOT}/hooks/${1:?run.sh requires a script filename as \$1}"
 
 # On Git Bash (MSYS2), convert POSIX path to mixed-mode Windows path
 # so native python.exe can resolve it. No-ops on Linux/Mac (no cygpath).
