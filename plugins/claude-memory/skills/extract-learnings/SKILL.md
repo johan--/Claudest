@@ -1,13 +1,9 @@
 ---
 name: extract-learnings
 description: >
-  This skill should be used when the user asks to persist learnings to memory
-  or maintain existing memories. Triggers on "extract learnings", "save this
-  for next time", "remember this pattern", "add this to memory", "update
-  CLAUDE.md with what we learned", "store this insight", "consolidate memories",
-  "consolidate", "dream", "autodream", "clean up memories", "maintain memories",
-  "prune memory files", "review my memories", "memory maintenance".
-  Not for recalling or searching past conversations — use recall-conversations.
+  Persist learnings to memory or maintain existing memories. Triggers on
+  "extract learnings", "save this for next time", "remember this pattern",
+  "consolidate memories", "dream", "clean up memories".
 allowed-tools:
   - Read
   - Write
@@ -252,7 +248,7 @@ Index entries pruned: N
 
 Then present each proposed change with the standard diff format. Get approval via `AskUserQuestion` with the same options as capture mode.
 
-After executing approved changes, write a consolidation marker to the same directory as MEMORY.md. Use the Write tool to create `.last-consolidation` containing the current Unix timestamp (from `date +%s`).
+After executing approved changes, write a consolidation marker to the same directory as MEMORY.md. Use the `Bash` tool to get the timestamp (`date -u +%Y-%m-%dT%H:%M:%SZ`) and use the `Write` tool to create `.last-consolidation` with that ISO timestamp as its content.
 
 ---
 

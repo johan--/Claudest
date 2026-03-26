@@ -44,7 +44,10 @@ def read_last_consolidation(marker: Path) -> datetime | None:
         return None
     try:
         text = marker.read_text().strip()
-        # Handle both ISO format and plain datetime strings
+        # Unix timestamp written by `date +%s`
+        if text.isdigit():
+            return datetime.fromtimestamp(int(text), tz=timezone.utc)
+        # ISO format (preferred)
         return datetime.fromisoformat(text.replace("Z", "+00:00"))
     except (ValueError, OSError):
         return None
@@ -116,8 +119,10 @@ def main():
         conn.execute("PRAGMA busy_timeout = 5000")
 
         since_iso = last_ts.isoformat() if last_ts else None
-        session_count = count_sessions_since(conn, project_key, since_iso)
-        conn.close()
+        try:
+            session_count = count_sessions_since(conn, project_key, since_iso)
+        finally:
+            conn.close()
     except Exception as e:
         logger.error(f"Consolidation check error: {e}")
         print(json.dumps({}))
