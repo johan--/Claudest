@@ -33,7 +33,7 @@ tools:
   - Read
   - Grep
   - Glob
-  - Bash
+  - Bash(git:*)
 maxTurns: 15
 ---
 

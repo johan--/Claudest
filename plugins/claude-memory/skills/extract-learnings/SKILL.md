@@ -60,6 +60,8 @@ Launch both agent calls in a single message so they run in parallel. Use the Age
 
 If Phase 1 noted MEMORY.md was just created (no existing memories), skip the Memory Auditor and spawn only the Signal Discoverer.
 
+Phase 2 is complete when both agents return reports. If either returns empty, proceed with the other's results only.
+
 ### Phase 3: Synthesize & Propose (main session)
 
 1. Receive agent reports
@@ -91,6 +93,8 @@ Apply approved edits. Output summary table:
 ```
 
 Only if Phase 2 agents ran (not an early-exit capture): write consolidation marker `Bash(date -u +%Y-%m-%dT%H:%M:%SZ)` → Write `.last-consolidation` in same directory as MEMORY.md.
+
+Phase 4 is complete when all approved edits are applied and the summary table is presented.
 
 ## Content Quality Rules
 

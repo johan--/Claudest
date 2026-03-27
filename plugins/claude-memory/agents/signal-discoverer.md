@@ -33,7 +33,8 @@ color: cyan
 tools:
   - Read
   - Glob
-  - Bash
+  - Bash(python3:*)
+  - Bash(git:*)
 maxTurns: 15
 ---
 
