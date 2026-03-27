@@ -65,10 +65,14 @@ CREATE TABLE IF NOT EXISTS branches (
   commits TEXT,
   tool_counts TEXT,
   aggregated_content TEXT,
+  context_summary TEXT,
+  context_summary_json TEXT,
+  summary_version INTEGER DEFAULT 0,
   UNIQUE(session_id, leaf_uuid)
 );
 CREATE INDEX IF NOT EXISTS idx_branches_session ON branches(session_id);
 CREATE INDEX IF NOT EXISTS idx_branches_active ON branches(is_active);
+CREATE INDEX IF NOT EXISTS idx_branches_summary_version ON branches(summary_version);
 
 -- Messages table (ALL messages stored ONCE per session)
 CREATE TABLE IF NOT EXISTS messages (
@@ -320,6 +324,14 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
     if "tool_counts" not in branch_cols:
         cursor.execute("ALTER TABLE branches ADD COLUMN tool_counts TEXT")
         conn.commit()
+    if "context_summary" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN context_summary TEXT")
+    if "context_summary_json" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN context_summary_json TEXT")
+    if "summary_version" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN summary_version INTEGER DEFAULT 0")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_branches_summary_version ON branches(summary_version)")
+    conn.commit()
 
     # --- DML migrations (version-gated via PRAGMA user_version, run once) ---
     version = conn.execute("PRAGMA user_version").fetchone()[0]
@@ -343,6 +355,78 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
         _reaggregate_notification_branches(cursor)
         conn.execute("PRAGMA user_version = 2")
         conn.commit()
+
+
+def _migrate_project_paths(conn: sqlite3.Connection) -> None:
+    """Fix project paths that were incorrectly derived from hyphenated directory keys.
+
+    When projects were first imported, path/name were derived from the Claude project
+    directory key (e.g. '-Users-foo-repos-meta-ads-cli') using a lossy replace('-', '/')
+    heuristic. For directories with hyphens in their name (e.g. 'meta-ads-cli'), this
+    produces wrong paths ('/Users/foo/repos/meta/ads/cli' instead of the real path).
+
+    The sessions.cwd column stores the REAL filesystem path recorded at runtime. This
+    migration uses the most-common cwd across each project's sessions to correct the
+    project path and name. It also merges duplicate projects that resolve to the same
+    real path.
+
+    This is idempotent: after fixing, the project path matches session cwd, so subsequent
+    runs find no mismatch and do nothing.
+    """
+    cursor = conn.cursor()
+
+    # Find all projects that have at least one session with a non-null cwd
+    cursor.execute("""
+        SELECT p.id, p.path, p.name,
+               s.cwd,
+               COUNT(*) AS cwd_count
+        FROM projects p
+        JOIN sessions s ON s.project_id = p.id
+        WHERE s.cwd IS NOT NULL AND s.cwd != ''
+        GROUP BY p.id, s.cwd
+        ORDER BY p.id, cwd_count DESC
+    """)
+    rows = cursor.fetchall()
+    if not rows:
+        return
+
+    # For each project, pick the most common cwd as the authoritative real path
+    best_cwd: dict[int, str] = {}
+    for proj_id, _path, _name, cwd, _count in rows:
+        if proj_id not in best_cwd:
+            best_cwd[proj_id] = cwd  # rows ordered by cwd_count DESC, first wins
+
+    # Now check which projects need updating
+    cursor.execute("SELECT id, path, name FROM projects")
+    projects = cursor.fetchall()
+
+    for proj_id, stored_path, stored_name in projects:
+        real_cwd = best_cwd.get(proj_id)
+        if not real_cwd or real_cwd == stored_path:
+            continue  # No cwd data or already correct
+
+        real_name = Path(real_cwd).name
+
+        # Check if another project already has real_cwd as its path (merge conflict)
+        cursor.execute("SELECT id FROM projects WHERE path = ? AND id != ?", (real_cwd, proj_id))
+        existing = cursor.fetchone()
+
+        if existing:
+            # Merge: reassign all sessions from this (wrong) project to the existing one
+            keeper_id = existing[0]
+            cursor.execute(
+                "UPDATE sessions SET project_id = ? WHERE project_id = ?",
+                (keeper_id, proj_id)
+            )
+            cursor.execute("DELETE FROM projects WHERE id = ?", (proj_id,))
+        else:
+            # Simple fix: update path and name
+            cursor.execute(
+                "UPDATE projects SET path = ?, name = ? WHERE id = ?",
+                (real_cwd, real_name, proj_id)
+            )
+
+    conn.commit()
 
 
 def get_db_connection(settings: Optional[dict] = None) -> sqlite3.Connection:
@@ -383,6 +467,12 @@ def get_db_connection(settings: Optional[dict] = None) -> sqlite3.Connection:
 
     # Add any missing columns (e.g. tool_summary)
     _migrate_columns(conn)
+
+    # Fix project paths that were incorrectly derived from hyphenated directory keys
+    try:
+        _migrate_project_paths(conn)
+    except Exception:
+        pass  # Never block DB connection on data migration errors
 
     return conn
 

@@ -36,6 +36,8 @@ from memory_lib.parsing import (
     parse_jsonl_file, parse_all_with_uuids, extract_session_metadata,
     find_all_branches, compute_branch_metadata, aggregate_branch_content,
 )
+from memory_lib.formatting import parse_project_key
+from memory_lib.summarizer import compute_context_summary
 
 
 def _is_under(path: Path, base: Path) -> bool:
@@ -81,20 +83,6 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
     """
     cursor = conn.cursor()
 
-    # Get or create project
-    project_key = project_dir.name
-    project_path = "/" + project_key.replace("-", "/").lstrip("/")
-    project_name = Path(project_path).name
-
-    cursor.execute("""
-        INSERT INTO projects (path, key, name)
-        VALUES (?, ?, ?)
-        ON CONFLICT(path) DO NOTHING
-    """, (project_path, project_key, project_name))
-
-    cursor.execute("SELECT id FROM projects WHERE path = ?", (project_path,))
-    project_id = cursor.fetchone()[0]
-
     # Get session UUID
     session_uuid = filepath.stem
     if session_uuid.startswith("agent-"):
@@ -115,8 +103,31 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
     if not messages:
         return 0
 
-    # Extract session-level metadata from all entries
+    # Extract session-level metadata from all entries (before project insert so we can use cwd)
     meta = extract_session_metadata(all_entries)
+
+    # Get or create project
+    project_key = project_dir.name
+    project_path = meta["cwd"] if meta.get("cwd") else parse_project_key(project_key)
+    project_name = Path(project_path).name
+
+    # First try to find existing project by key
+    cursor.execute("SELECT id, path FROM projects WHERE key = ?", (project_key,))
+    existing = cursor.fetchone()
+    if existing:
+        project_id = existing[0]
+        # Update path/name if we now have better data
+        if project_path != existing[1]:
+            cursor.execute("UPDATE projects SET path = ?, name = ? WHERE id = ?",
+                           (project_path, project_name, project_id))
+    else:
+        cursor.execute("""
+            INSERT INTO projects (path, key, name)
+            VALUES (?, ?, ?)
+            ON CONFLICT(path) DO UPDATE SET key = excluded.key, name = excluded.name
+        """, (project_path, project_key, project_name))
+        cursor.execute("SELECT id FROM projects WHERE key = ?", (project_key,))
+        project_id = cursor.fetchone()[0]
 
     # Step 1: Upsert ONE session row
     cursor.execute("""
@@ -280,6 +291,16 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
             "UPDATE branches SET aggregated_content = ? WHERE id = ?",
             (agg_content, branch_db_id)
         )
+
+        # Compute and store context summary
+        try:
+            summary_md, summary_json = compute_context_summary(cursor, branch_db_id)
+            cursor.execute("""
+                UPDATE branches SET context_summary = ?, context_summary_json = ?, summary_version = 2
+                WHERE id = ?
+            """, (summary_md, summary_json, branch_db_id))
+        except Exception:
+            pass  # Don't fail sync on summary errors
 
     # Step 5: Clean up stale branches
     stale_branch_ids = [

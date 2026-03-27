@@ -22,6 +22,7 @@ spec.loader.exec_module(memory_context)
 
 select_sessions = memory_context.select_sessions
 build_context = memory_context.build_context
+_build_fallback_context = memory_context._build_fallback_context
 
 
 class TestSessionSelection:
@@ -335,12 +336,23 @@ class TestSessionSelection:
 
 
 class TestBuildContext:
-    """Test build_context() — the markdown renderer for context injection."""
+    """Test build_context() — uses cached summaries or fallback."""
 
     def test_empty_sessions_returns_empty(self):
         assert build_context([]) == ""
 
-    def test_single_session_renders_exchange(self):
+    def test_cached_summary_used_directly(self):
+        """When context_summary is present, it should be used as-is."""
+        sessions = [{
+            "context_summary": "### Session: 2025-01-15 14:30 -> 15:00\nCached content here.",
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+        }]
+        result = build_context(sessions)
+        assert "Cached content here." in result
+
+    def test_fallback_renders_exchange(self):
+        """Without context_summary, fallback should render exchanges."""
         sessions = [{
             "started_at": "2025-01-15T14:30:00Z",
             "ended_at": "2025-01-15T15:00:00Z",
@@ -357,36 +369,7 @@ class TestBuildContext:
         assert "Run pytest from the project root." in result
         assert "User:**" in result
         assert "Assistant:**" in result
-
-    def test_tool_markers_stripped(self):
-        sessions = [{
-            "started_at": "2025-01-15T14:30:00Z",
-            "ended_at": "2025-01-15T15:00:00Z",
-            "files_modified": [],
-            "commits": [],
-            "messages": [
-                {"role": "user", "content": "Read the file", "timestamp": "2025-01-15T14:30:00Z"},
-                {"role": "assistant", "content": "Here is the content [Tool: Read] of the file [Tool: Bash].", "timestamp": "2025-01-15T14:31:00Z"},
-            ],
-        }]
-        result = build_context(sessions)
-        assert "[Tool: Read]" not in result
-        assert "[Tool: Bash]" not in result
-        assert "Here is the content" in result
-        assert "of the file" in result
-
-    def test_no_messages_skipped(self):
-        sessions = [{
-            "started_at": "2025-01-15T14:30:00Z",
-            "ended_at": "2025-01-15T15:00:00Z",
-            "files_modified": [],
-            "commits": [],
-            "messages": [],
-        }]
-        result = build_context(sessions)
-        # Session header should exist but no exchange content
-        assert "### Session:" in result
-        assert "User:**" not in result
+        assert "/recall-conversations" in result
 
     def test_multi_session_separator(self):
         sessions = [
@@ -401,40 +384,83 @@ class TestBuildContext:
                 ],
             },
             {
-                "started_at": "2025-01-15T15:00:00Z",
-                "ended_at": "2025-01-15T15:30:00Z",
-                "files_modified": [],
-                "commits": [],
-                "messages": [
-                    {"role": "user", "content": "Second session", "timestamp": "2025-01-15T15:00:00Z"},
-                    {"role": "assistant", "content": "OK2", "timestamp": "2025-01-15T15:01:00Z"},
-                ],
+                "context_summary": "### Session: Second\nCached.",
             },
         ]
         result = build_context(sessions)
         assert "---" in result
         assert "First session" in result
-        assert "Second session" in result
+        assert "Cached." in result
 
-    def test_files_modified_rendered(self):
-        sessions = [{
+    def test_mixed_cached_and_fallback(self):
+        """Sessions can mix cached and uncached."""
+        sessions = [
+            {"context_summary": "Cached session 1."},
+            {
+                "started_at": "2025-01-15T15:00:00Z",
+                "ended_at": "2025-01-15T15:30:00Z",
+                "files_modified": [],
+                "commits": [],
+                "messages": [
+                    {"role": "user", "content": "Uncached session", "timestamp": "2025-01-15T15:00:00Z"},
+                    {"role": "assistant", "content": "OK", "timestamp": "2025-01-15T15:01:00Z"},
+                ],
+            },
+        ]
+        result = build_context(sessions)
+        assert "Cached session 1." in result
+        assert "Uncached session" in result
+
+
+class TestBuildFallbackContext:
+    """Test _build_fallback_context() — the fallback renderer for uncached branches."""
+
+    def test_tool_markers_stripped(self):
+        session = {
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "Read the file", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Here is the content [Tool: Read] of the file [Tool: Bash].", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }
+        result = _build_fallback_context(session)
+        assert "[Tool: Read]" not in result
+        assert "[Tool: Bash]" not in result
+        assert "Here is the content" in result
+
+    def test_no_messages(self):
+        session = {
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [],
+        }
+        result = _build_fallback_context(session)
+        assert "### Session:" in result
+        assert "User:**" not in result
+
+    def test_files_modified_compact(self):
+        session = {
             "started_at": "2025-01-15T14:30:00Z",
             "ended_at": "2025-01-15T15:00:00Z",
             "files_modified": ["/src/main.py", "/src/utils.py"],
             "commits": [],
             "messages": [
-                {"role": "user", "content": "Fix the bug", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "user", "content": "Fix it", "timestamp": "2025-01-15T14:30:00Z"},
                 {"role": "assistant", "content": "Done.", "timestamp": "2025-01-15T14:31:00Z"},
             ],
-        }]
-        result = build_context(sessions)
-        assert "### Files Modified" in result
+        }
+        result = _build_fallback_context(session)
+        assert "Modified:" in result
         assert "`/src/main.py`" in result
-        assert "`/src/utils.py`" in result
 
-    def test_files_truncated_at_10(self):
-        files = [f"/file{i}.py" for i in range(15)]
-        sessions = [{
+    def test_files_truncated_at_6(self):
+        files = [f"/file{i}.py" for i in range(10)]
+        session = {
             "started_at": "2025-01-15T14:30:00Z",
             "ended_at": "2025-01-15T15:00:00Z",
             "files_modified": files,
@@ -443,12 +469,12 @@ class TestBuildContext:
                 {"role": "user", "content": "Work", "timestamp": "2025-01-15T14:30:00Z"},
                 {"role": "assistant", "content": "Done.", "timestamp": "2025-01-15T14:31:00Z"},
             ],
-        }]
-        result = build_context(sessions)
-        assert "...and 5 more" in result
+        }
+        result = _build_fallback_context(session)
+        assert "+4 more" in result
 
     def test_commits_rendered(self):
-        sessions = [{
+        session = {
             "started_at": "2025-01-15T14:30:00Z",
             "ended_at": "2025-01-15T15:00:00Z",
             "files_modified": [],
@@ -457,13 +483,13 @@ class TestBuildContext:
                 {"role": "user", "content": "Commit it", "timestamp": "2025-01-15T14:30:00Z"},
                 {"role": "assistant", "content": "Committed.", "timestamp": "2025-01-15T14:31:00Z"},
             ],
-        }]
-        result = build_context(sessions)
-        assert "### Git Commits" in result
+        }
+        result = _build_fallback_context(session)
+        assert "Commits:" in result
         assert "fix: resolve parsing bug" in result
 
     def test_user_without_assistant_response(self):
-        sessions = [{
+        session = {
             "started_at": "2025-01-15T14:30:00Z",
             "ended_at": "2025-01-15T15:00:00Z",
             "files_modified": [],
@@ -471,7 +497,43 @@ class TestBuildContext:
             "messages": [
                 {"role": "user", "content": "Last question unanswered", "timestamp": "2025-01-15T14:30:00Z"},
             ],
-        }]
-        result = build_context(sessions)
+        }
+        result = _build_fallback_context(session)
         assert "Last question unanswered" in result
         assert "User:**" in result
+
+    def test_long_session_has_first_and_last(self):
+        """Sessions with >8 exchanges should show first 2 + gap + last 6."""
+        messages = []
+        for i in range(12):
+            messages.append({"role": "user", "content": f"Q{i}", "timestamp": f"2025-01-15T10:{i:02d}:00Z"})
+            messages.append({"role": "assistant", "content": f"A{i}", "timestamp": f"2025-01-15T10:{i:02d}:30Z"})
+        session = {
+            "started_at": "2025-01-15T10:00:00Z",
+            "ended_at": "2025-01-15T10:12:00Z",
+            "exchange_count": 12,
+            "files_modified": [],
+            "commits": [],
+            "messages": messages,
+        }
+        result = _build_fallback_context(session)
+        assert "### First Exchanges" in result
+        assert "### Where We Left Off" in result
+        assert "Q0" in result   # First exchange
+        assert "Q1" in result   # Second exchange
+        assert "Q11" in result  # Last exchange
+        assert "Q6" in result   # First of last 6
+
+    def test_recall_footer_present(self):
+        session = {
+            "started_at": "2025-01-15T14:30:00Z",
+            "ended_at": "2025-01-15T15:00:00Z",
+            "files_modified": [],
+            "commits": [],
+            "messages": [
+                {"role": "user", "content": "Hello", "timestamp": "2025-01-15T14:30:00Z"},
+                {"role": "assistant", "content": "Hi", "timestamp": "2025-01-15T14:31:00Z"},
+            ],
+        }
+        result = _build_fallback_context(session)
+        assert "/recall-conversations" in result

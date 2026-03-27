@@ -32,6 +32,7 @@ from memory_lib.parsing import (
     find_all_branches, compute_branch_metadata, aggregate_branch_content,
 )
 from memory_lib.formatting import parse_project_key, extract_project_name
+from memory_lib.summarizer import compute_context_summary
 
 
 def get_file_hash(filepath: Path) -> str:
@@ -221,6 +222,16 @@ def import_session(
             (agg_content, branch_db_id)
         )
 
+        # Compute and store context summary
+        try:
+            summary_md, summary_json = compute_context_summary(cursor, branch_db_id)
+            cursor.execute("""
+                UPDATE branches SET context_summary = ?, context_summary_json = ?, summary_version = 2
+                WHERE id = ?
+            """, (summary_md, summary_json, branch_db_id))
+        except Exception:
+            pass  # Don't fail import on summary errors
+
         branches_imported += 1
 
     # Clean up orphaned messages (not referenced by any branch)
@@ -266,19 +277,41 @@ def import_project(
     cursor = conn.cursor()
 
     project_key = project_dir.name
-    project_path = parse_project_key(project_key)
+    # Try to get real path from first session's metadata (avoids lossy hyphen reconstruction)
+    project_path = None
+    for f in sorted(project_dir.glob("*.jsonl"))[:1]:
+        try:
+            first_entries = list(parse_all_with_uuids(f))
+            meta = extract_session_metadata(first_entries)
+            if meta.get("cwd"):
+                project_path = meta["cwd"]
+                break
+        except Exception:
+            pass
+    if not project_path:
+        project_path = parse_project_key(project_key)
     project_name = extract_project_name(project_path)
 
     if exclude_projects and project_name in exclude_projects:
         return 0, 0, 0
 
-    cursor.execute("""
-        INSERT INTO projects (path, key, name)
-        VALUES (?, ?, ?)
-        ON CONFLICT(path) DO UPDATE SET key = excluded.key
-    """, (project_path, project_key, project_name))
-    cursor.execute("SELECT id FROM projects WHERE path = ?", (project_path,))
-    project_id = cursor.fetchone()[0]
+    cursor.execute("SELECT id, path FROM projects WHERE key = ?", (project_key,))
+    existing = cursor.fetchone()
+    if existing:
+        project_id = existing[0]
+        if project_path != existing[1]:
+            cursor.execute(
+                "UPDATE projects SET path = ?, name = ? WHERE id = ?",
+                (project_path, project_name, project_id),
+            )
+    else:
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)"
+            " ON CONFLICT(path) DO UPDATE SET key = excluded.key, name = excluded.name",
+            (project_path, project_key, project_name),
+        )
+        cursor.execute("SELECT id FROM projects WHERE key = ?", (project_key,))
+        project_id = cursor.fetchone()[0]
 
     sessions_imported = 0
     messages_imported = 0

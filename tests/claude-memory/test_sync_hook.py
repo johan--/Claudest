@@ -95,6 +95,28 @@ class TestSyncSessionCreatesBranches:
             content = row[0]
             assert content, "Active branch should have aggregated content"
 
+    def test_sync_session_populates_context_summary(self, memory_db_with_project):
+        """Context summary and summary_version should be populated after sync."""
+        conn, project_id = memory_db_with_project
+        fixture_path = FIXTURE_DIR / "single_rewind.jsonl"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            project_dir = Path(tmpdir)
+            sync_session(conn, fixture_path, project_dir)
+            conn.commit()
+
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT context_summary, summary_version FROM branches WHERE is_active = 1"
+            )
+            row = cursor.fetchone()
+            assert row is not None
+            summary, version = row
+            assert summary, "Active branch should have context_summary"
+            assert version == 2, "summary_version should be 2 after sync"
+            assert "### Session:" in summary
+            assert "/recall-conversations" in summary
+
 
 class TestSyncSessionUpdatesExisting:
     """Test that syncing the same session twice updates rather than duplicates."""
