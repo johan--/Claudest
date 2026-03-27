@@ -32,7 +32,6 @@ model: inherit
 color: cyan
 tools:
   - Read
-  - Grep
   - Glob
   - Bash(python3:*)
   - Bash(git:*)
@@ -48,18 +47,12 @@ project name. If the project name is missing, infer it from the current working 
 
 ## Process
 
-1. Locate the recall script. Run:
+1. Locate the recall script:
    `Glob ~/.claude/plugins/cache/*/claude-memory/*/skills/recall-conversations/scripts/recent_chats.py`
-   Use the first match. If no match, fall back to reading JSONL transcripts directly from
-   `~/.claude/projects/` (see step 1b).
+   Use the first match.
 
-   1b. Fallback transcript reading: Glob for `~/.claude/projects/*<project-name>*/*.jsonl`,
-   sort by modification time, read the 5 most recent. Extract only human and assistant text
-   content — skip tool_use, tool_result, and system blocks.
-
-2. If step 1 found a script path, run it:
+2. Run the script to retrieve recent sessions:
    `python3 <script-path> --n 10 --project <project-name> --verbose`
-   If step 1b was used instead, skip to step 3 — the JSONL content is already loaded.
 
 3. Analyze each session for high-signal content. Look specifically for:
    - User corrections ("no, not that", "don't do X", "stop doing Y") — these indicate
