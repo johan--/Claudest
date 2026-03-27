@@ -25,6 +25,7 @@ sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "recall-conversations" / "
 
 from memory_lib.db import get_db_path, load_settings, setup_logging
 from memory_lib.formatting import format_time, format_time_full, get_project_key
+from memory_lib.summarizer import _build_exchange_pairs, _truncate_mid
 
 
 def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_id: str, max_sessions: int) -> list[dict]:
@@ -44,7 +45,8 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
     # Get recent active branches (by last activity), excluding current and subagents
     cursor.execute("""
         SELECT s.id, s.uuid, b.started_at, b.ended_at, b.exchange_count,
-               b.files_modified, b.commits, s.git_branch, b.id as branch_db_id
+               b.files_modified, b.commits, s.git_branch, b.id as branch_db_id,
+               b.context_summary
         FROM sessions s
         JOIN branches b ON b.session_id = s.id AND b.is_active = 1
         WHERE s.project_id = ?
@@ -60,7 +62,7 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
     # First pass: filter candidates using the exchange-count algorithm
     filtered = []
     for session in candidates:
-        _session_id, uuid, started_at, ended_at, exchange_count, files_json, commits_json, git_branch, branch_db_id = session
+        _session_id, uuid, started_at, ended_at, exchange_count, files_json, commits_json, git_branch, branch_db_id, context_summary = session
 
         if exchange_count <= 1:
             continue
@@ -74,6 +76,7 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
             "commits": json.loads(commits_json) if commits_json else [],
             "git_branch": git_branch,
             "branch_db_id": branch_db_id,
+            "context_summary": context_summary,
         }
 
         if exchange_count == 2:
@@ -89,153 +92,149 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
     if not filtered:
         return selected
 
-    # Batch-load messages for all selected branches in a single query
-    branch_ids = [s["branch_db_id"] for s in filtered]
-    placeholders = ",".join("?" * len(branch_ids))
-    cursor.execute(f"""
-        SELECT bm.branch_id, m.role, m.content, m.timestamp, m.tool_summary
-        FROM branch_messages bm
-        JOIN messages m ON bm.message_id = m.id
-        WHERE bm.branch_id IN ({placeholders})
-          AND COALESCE(m.is_notification, 0) = 0
-        ORDER BY bm.branch_id, m.timestamp ASC
-    """, branch_ids)
+    # Split into cached (has context_summary) and uncached
+    uncached_ids = [s["branch_db_id"] for s in filtered if not s.get("context_summary")]
 
-    # Group messages by branch_id
+    # Only batch-load messages for uncached branches
     branch_messages = {}  # type: dict[int, list[dict]]
-    for branch_id, role, content, timestamp, tool_summary in cursor.fetchall():
-        branch_messages.setdefault(branch_id, []).append(
-            {"role": role, "content": content, "timestamp": timestamp, "tool_summary": tool_summary}
-        )
+    if uncached_ids:
+        placeholders = ",".join("?" * len(uncached_ids))
+        cursor.execute(f"""
+            SELECT bm.branch_id, m.role, m.content, m.timestamp
+            FROM branch_messages bm
+            JOIN messages m ON bm.message_id = m.id
+            WHERE bm.branch_id IN ({placeholders})
+              AND COALESCE(m.is_notification, 0) = 0
+            ORDER BY bm.branch_id, m.timestamp ASC
+        """, uncached_ids)
+
+        for branch_id, role, content, timestamp in cursor.fetchall():
+            branch_messages.setdefault(branch_id, []).append(
+                {"role": role, "content": content, "timestamp": timestamp}
+            )
 
     for entry in filtered:
-        entry["messages"] = branch_messages.get(entry["branch_db_id"], [])
+        if not entry.get("context_summary"):
+            entry["messages"] = branch_messages.get(entry["branch_db_id"], [])
         del entry["branch_db_id"]
         selected.append(entry)
 
     return selected
 
 
-def _format_tool_summary(tool_summaries: list) -> str:
-    """Merge tool_summary JSON strings from multiple assistant messages into a compact line."""
-    merged = {}  # type: dict[str, int]
-    for raw in tool_summaries:
-        if not raw:
-            continue
-        try:
-            summary = json.loads(raw)
-            for tool, count in summary.items():
-                merged[tool] = merged.get(tool, 0) + count
-        except (json.JSONDecodeError, AttributeError):
-            continue
-    if not merged:
-        return ""
-    parts = [f"{tool}({count})" for tool, count in merged.items()]
-    return "Tools: " + ", ".join(parts)
-
-
-def build_context(sessions: list[dict]) -> str:
-    """Build markdown context from selected sessions."""
-    if not sessions:
-        return ""
-
+def _build_fallback_context(session: dict) -> str:
+    """
+    Fallback for sessions without cached context_summary.
+    Renders truncated last-3 exchanges in the same format as render_context_summary.
+    """
     lines = []
 
-    for i, session in enumerate(sessions):
-        if i > 0:
-            lines.append("\n---\n")
+    # Session header
+    start = format_time_full(session["started_at"])
+    end = format_time_full(session["ended_at"])
+    header = f"### Session: {start} -> {end}"
+    branch = session.get("git_branch")
+    if branch:
+        header += f" (branch: {branch})"
+    lines.append(header + "\n")
 
-        # Session timeline with full date and optional branch
-        start = format_time_full(session["started_at"])
-        end = format_time_full(session["ended_at"])
-        header = f"### Session: {start} -> {end}"
-        branch = session.get("git_branch")
-        if branch:
-            header += f" (branch: {branch})"
-        lines.append(header + "\n")
+    # Files modified (compact)
+    files = session.get("files_modified", [])
+    if files:
+        file_strs = [f"`{f}`" for f in files[:6]]
+        line = "Modified: " + ", ".join(file_strs)
+        if len(files) > 6:
+            line += f" +{len(files) - 6} more"
+        lines.append(line)
 
-        # Topic line from first user message
-        messages = session.get("messages", [])
-        for m in messages:
-            if m["role"] == "user" and m.get("content"):
-                topic = " ".join(m["content"].split())
-                if len(topic) > 120:
-                    topic = topic[:120] + "..."
-                lines.append(f"**Topic:** {topic}\n")
-                break
+    # Commits
+    commits = session.get("commits", [])
+    if commits:
+        lines.append("Commits: " + "; ".join(commits[:3]))
 
-        # Files modified
-        files = session.get("files_modified", [])
-        if files:
-            lines.append("### Files Modified")
-            for f in files[-10:]:  # Last 10
-                lines.append(f"- `{f}`")
-            if len(files) > 10:
-                lines.append(f"- ...and {len(files) - 10} more")
-            lines.append("")
+    lines.append("")
 
-        # Git commits
-        commits = session.get("commits", [])
-        if commits:
-            lines.append("### Git Commits")
-            for c in commits:
-                lines.append(f"- {c}")
-            lines.append("")
+    # Build exchanges from messages
+    messages = session.get("messages", [])
+    if not messages:
+        return "\n".join(lines)
 
-        # Build exchange pairs from all messages
-        if not messages:
-            continue
+    exchanges = _build_exchange_pairs(messages)
+    if not exchanges:
+        return "\n".join(lines)
 
-        exchanges = []
-        current_user = None
-        current_asst = []
-        current_tool_summaries = []  # type: list
+    exchange_count = session.get("exchange_count", len(exchanges))
 
-        for m in messages:
-            if m["role"] == "user":
-                if current_user is not None:
-                    exchanges.append({
-                        "user": current_user,
-                        "asst": "\n\n".join(current_asst),
-                        "ts": m["timestamp"],
-                        "tools": list(current_tool_summaries),
-                    })
-                current_user = m["content"]
-                current_asst = []
-                current_tool_summaries = []
-            elif m["role"] == "assistant" and current_user is not None:
-                cleaned = re.sub(r'\[Tool: \w+\]', '', m["content"]).strip()
-                if cleaned:
-                    current_asst.append(cleaned)
-                current_tool_summaries.append(m.get("tool_summary"))
-
-        if current_user is not None:
-            exchanges.append({
-                "user": current_user,
-                "asst": "\n\n".join(current_asst),
-                "ts": None,
-                "tools": list(current_tool_summaries),
-            })
-
-        if not exchanges:
-            continue
-
-        lines.append("### Where We Left Off\n")
-
+    if len(exchanges) <= 3:
+        lines.append("### Conversation\n")
         for ex in exchanges:
-            t = format_time(ex.get("ts"))
+            t = format_time(ex.get("timestamp"))
             lines.append(f"**[{t}] User:**")
             lines.append(ex["user"])
             lines.append("")
-            if ex["asst"]:
+            if ex["assistant"]:
                 lines.append(f"**[{t}] Assistant:**")
-                lines.append(ex["asst"])
-                tool_line = _format_tool_summary(ex.get("tools", []))
-                if tool_line:
-                    lines.append(tool_line)
+                lines.append(_truncate_mid(ex["assistant"]))
+                lines.append("")
+    else:
+        # First exchange
+        first = exchanges[0]
+        lines.append("### First Exchange\n")
+        t = format_time(first.get("timestamp"))
+        lines.append(f"**[{t}] User:**")
+        lines.append(first["user"])
+        lines.append("")
+        if first["assistant"]:
+            lines.append(f"**[{t}] Assistant:**")
+            lines.append(_truncate_mid(first["assistant"]))
+            lines.append("")
+
+        # Gap
+        gap = len(exchanges) - 4
+        if gap > 0:
+            lines.append(f"[... {gap} exchanges ...]\n")
+
+        # Last 3 exchanges
+        lines.append("### Where We Left Off\n")
+        for ex in exchanges[-3:]:
+            t = format_time(ex.get("timestamp"))
+            lines.append(f"**[{t}] User:**")
+            lines.append(ex["user"])
+            lines.append("")
+            if ex["assistant"]:
+                lines.append(f"**[{t}] Assistant:**")
+                lines.append(_truncate_mid(ex["assistant"]))
                 lines.append("")
 
+    # Recall priming footer
+    lines.append(
+        f"[{exchange_count} total exchanges — proactively use /recall-conversations "
+        "to retrieve relevant context from past conversations when the user references "
+        "prior work, asks about decisions made earlier, or when you sense useful context "
+        "from previous sessions would improve your response.]"
+    )
+
     return "\n".join(lines)
+
+
+def build_context(sessions: list[dict]) -> str:
+    """Build markdown context from selected sessions.
+
+    Uses cached context_summary when available, falls back to
+    truncated last-3 exchanges for uncached branches.
+    """
+    if not sessions:
+        return ""
+
+    parts = []
+    for session in sessions:
+        cached = session.get("context_summary")
+        if cached:
+            parts.append(cached)
+        else:
+            parts.append(_build_fallback_context(session))
+
+    return "\n\n---\n\n".join(parts)
 
 
 def main():

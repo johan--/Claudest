@@ -36,6 +36,7 @@ from memory_lib.parsing import (
     parse_jsonl_file, parse_all_with_uuids, extract_session_metadata,
     find_all_branches, compute_branch_metadata, aggregate_branch_content,
 )
+from memory_lib.summarizer import compute_context_summary
 
 
 def _is_under(path: Path, base: Path) -> bool:
@@ -280,6 +281,16 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
             "UPDATE branches SET aggregated_content = ? WHERE id = ?",
             (agg_content, branch_db_id)
         )
+
+        # Compute and store context summary
+        try:
+            summary_md, summary_json = compute_context_summary(cursor, branch_db_id)
+            cursor.execute("""
+                UPDATE branches SET context_summary = ?, context_summary_json = ?, summary_version = 1
+                WHERE id = ?
+            """, (summary_md, summary_json, branch_db_id))
+        except Exception:
+            pass  # Don't fail sync on summary errors
 
     # Step 5: Clean up stale branches
     stale_branch_ids = [

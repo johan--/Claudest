@@ -32,6 +32,7 @@ from memory_lib.parsing import (
     find_all_branches, compute_branch_metadata, aggregate_branch_content,
 )
 from memory_lib.formatting import parse_project_key, extract_project_name
+from memory_lib.summarizer import compute_context_summary
 
 
 def get_file_hash(filepath: Path) -> str:
@@ -220,6 +221,16 @@ def import_session(
             "UPDATE branches SET aggregated_content = ? WHERE id = ?",
             (agg_content, branch_db_id)
         )
+
+        # Compute and store context summary
+        try:
+            summary_md, summary_json = compute_context_summary(cursor, branch_db_id)
+            cursor.execute("""
+                UPDATE branches SET context_summary = ?, context_summary_json = ?, summary_version = 1
+                WHERE id = ?
+            """, (summary_md, summary_json, branch_db_id))
+        except Exception:
+            pass  # Don't fail import on summary errors
 
         branches_imported += 1
 

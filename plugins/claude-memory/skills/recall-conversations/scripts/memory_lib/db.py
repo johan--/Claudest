@@ -65,6 +65,9 @@ CREATE TABLE IF NOT EXISTS branches (
   commits TEXT,
   tool_counts TEXT,
   aggregated_content TEXT,
+  context_summary TEXT,
+  context_summary_json TEXT,
+  summary_version INTEGER DEFAULT 0,
   UNIQUE(session_id, leaf_uuid)
 );
 CREATE INDEX IF NOT EXISTS idx_branches_session ON branches(session_id);
@@ -320,6 +323,13 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
     if "tool_counts" not in branch_cols:
         cursor.execute("ALTER TABLE branches ADD COLUMN tool_counts TEXT")
         conn.commit()
+    if "context_summary" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN context_summary TEXT")
+    if "context_summary_json" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN context_summary_json TEXT")
+    if "summary_version" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN summary_version INTEGER DEFAULT 0")
+    conn.commit()
 
     # --- DML migrations (version-gated via PRAGMA user_version, run once) ---
     version = conn.execute("PRAGMA user_version").fetchone()[0]

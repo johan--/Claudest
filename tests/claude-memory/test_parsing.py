@@ -149,7 +149,7 @@ class TestFixtureBranches:
         branches = find_all_branches(all_entries)
         active = [b for b in branches if b["is_active"]][0]
         active_entries = [e for e in all_entries if e.get("uuid") in active["uuids"]]
-        exchange_count, _, _ = compute_branch_metadata(active_entries)
+        exchange_count, _, _, _ = compute_branch_metadata(active_entries)
         expected = EXPECTED[jsonl_fixture.stem]
         assert exchange_count == expected["active_exchanges"], (
             f"{jsonl_fixture.stem}: expected {expected['active_exchanges']} exchanges, got {exchange_count}"
@@ -212,7 +212,7 @@ class TestComputeBranchMetadata:
             {"type": "user", "message": {"content": "How?"}},
             {"type": "assistant", "message": {"content": "Like this."}},
         ]
-        count, files, commits = compute_branch_metadata(entries)
+        count, files, commits, _ = compute_branch_metadata(entries)
         assert count == 2
 
     def test_notifications_not_counted_as_exchanges(self):
@@ -227,7 +227,7 @@ class TestComputeBranchMetadata:
             {"type": "user", "message": {"content": "Summarize the results"}},
             {"type": "assistant", "message": {"content": "Here is the summary."}},
         ]
-        count, _, _ = compute_branch_metadata(entries)
+        count, _, _, _ = compute_branch_metadata(entries)
         assert count == 2  # Only "Research AI memory" and "Summarize the results"
 
     def test_tool_results_not_counted_as_exchanges(self):
@@ -243,7 +243,7 @@ class TestComputeBranchMetadata:
             ]}},
             {"type": "assistant", "message": {"content": "Done."}},
         ]
-        count, _, _ = compute_branch_metadata(entries)
+        count, _, _, _ = compute_branch_metadata(entries)
         assert count == 1
 
     def test_files_modified_extracted(self):
@@ -254,7 +254,7 @@ class TestComputeBranchMetadata:
                 {"type": "tool_use", "name": "Write", "input": {"file_path": "/b.py"}},
             ]}},
         ]
-        _, files, _ = compute_branch_metadata(entries)
+        _, files, _, _ = compute_branch_metadata(entries)
         assert files == ["/a.py", "/b.py"]
 
     def test_files_deduplicated(self):
@@ -269,16 +269,16 @@ class TestComputeBranchMetadata:
                 {"type": "tool_use", "name": "Write", "input": {"file_path": "/b.py"}},
             ]}},
         ]
-        _, files, _ = compute_branch_metadata(entries)
+        _, files, _, _ = compute_branch_metadata(entries)
         assert files == ["/a.py", "/b.py"]
 
     def test_single_user_message(self):
         entries = [{"type": "user", "message": {"content": "Hello"}}]
-        count, _, _ = compute_branch_metadata(entries)
+        count, _, _, _ = compute_branch_metadata(entries)
         assert count == 1
 
     def test_empty_entries(self):
-        count, files, commits = compute_branch_metadata([])
+        count, files, commits, _ = compute_branch_metadata([])
         assert count == 0
         assert files == []
         assert commits == []

@@ -91,6 +91,20 @@ class TestMigrateColumns:
         assert "is_notification" in columns
         conn.close()
 
+    def test_adds_context_summary_columns(self):
+        """_migrate_columns should add context_summary, context_summary_json, summary_version to branches."""
+        conn = _pre_migration_db()
+
+        _migrate_columns(conn)
+
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(branches)")
+        columns = {row[1] for row in cursor.fetchall()}
+        assert "context_summary" in columns
+        assert "context_summary_json" in columns
+        assert "summary_version" in columns
+        conn.close()
+
     def test_idempotent_when_column_exists(self, memory_db):
         """_migrate_columns should not fail when column already exists."""
         _migrate_columns(memory_db)  # Already called in fixture, call again
