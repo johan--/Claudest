@@ -10,6 +10,7 @@ from memory_lib.db import (
     DEFAULT_SETTINGS,
     SCHEMA,
     _migrate_columns,
+    _migrate_project_paths,
     load_settings,
     migrate_db,
 )
@@ -336,3 +337,178 @@ class TestMigrateDb:
 
         result = migrate_db(conn)
         assert result is True, "Should detect v2 schema in memory DB"
+
+
+def _project_path_db():
+    """Create an in-memory DB with full schema for project path migration tests."""
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(SCHEMA)
+    conn.commit()
+    _migrate_columns(conn)
+    return conn
+
+
+class TestMigrateProjectPaths:
+    def test_fixes_wrong_path_from_session_cwd(self):
+        """Migration corrects a project whose path was derived from a hyphenated key."""
+        conn = _project_path_db()
+        cursor = conn.cursor()
+
+        # Insert a project with a lossy hyphen-split path (e.g. meta-ads-cli became meta/ads/cli)
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/meta/ads/cli", "-Users-foo-repos-meta-ads-cli", "cli")
+        )
+        proj_id = cursor.lastrowid
+
+        # Insert a session with the real cwd
+        cursor.execute(
+            "INSERT INTO sessions (uuid, project_id, cwd) VALUES (?, ?, ?)",
+            ("sess-uuid-1", proj_id, "/Users/foo/repos/meta-ads-cli")
+        )
+        conn.commit()
+
+        _migrate_project_paths(conn)
+
+        cursor.execute("SELECT path, name FROM projects WHERE id = ?", (proj_id,))
+        path, name = cursor.fetchone()
+        assert path == "/Users/foo/repos/meta-ads-cli"
+        assert name == "meta-ads-cli"
+        conn.close()
+
+    def test_no_change_when_path_already_correct(self):
+        """Migration leaves projects alone when path already matches session cwd."""
+        conn = _project_path_db()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/myproject", "-Users-foo-repos-myproject", "myproject")
+        )
+        proj_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO sessions (uuid, project_id, cwd) VALUES (?, ?, ?)",
+            ("sess-uuid-2", proj_id, "/Users/foo/repos/myproject")
+        )
+        conn.commit()
+
+        _migrate_project_paths(conn)
+
+        cursor.execute("SELECT path, name FROM projects WHERE id = ?", (proj_id,))
+        path, name = cursor.fetchone()
+        assert path == "/Users/foo/repos/myproject"
+        assert name == "myproject"
+        conn.close()
+
+    def test_merge_duplicate_on_path_collision(self):
+        """When fixing a path would create a duplicate, sessions are merged into the keeper."""
+        conn = _project_path_db()
+        cursor = conn.cursor()
+
+        # Project A: already has the correct path
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/meta-ads-cli", "-Users-foo-repos-meta-ads-cli-correct", "meta-ads-cli")
+        )
+        keeper_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO sessions (uuid, project_id, cwd) VALUES (?, ?, ?)",
+            ("sess-keeper", keeper_id, "/Users/foo/repos/meta-ads-cli")
+        )
+
+        # Project B: wrong path, but its sessions' cwd matches A's path
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/meta/ads/cli", "-Users-foo-repos-meta-ads-cli-wrong", "cli")
+        )
+        dup_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO sessions (uuid, project_id, cwd) VALUES (?, ?, ?)",
+            ("sess-dup", dup_id, "/Users/foo/repos/meta-ads-cli")
+        )
+        conn.commit()
+
+        _migrate_project_paths(conn)
+
+        # Duplicate project should be gone
+        cursor.execute("SELECT id FROM projects WHERE id = ?", (dup_id,))
+        assert cursor.fetchone() is None
+
+        # The orphaned session should now belong to the keeper
+        cursor.execute("SELECT project_id FROM sessions WHERE uuid = ?", ("sess-dup",))
+        assert cursor.fetchone()[0] == keeper_id
+
+        # Keeper's path is unchanged
+        cursor.execute("SELECT path FROM projects WHERE id = ?", (keeper_id,))
+        assert cursor.fetchone()[0] == "/Users/foo/repos/meta-ads-cli"
+        conn.close()
+
+    def test_idempotent(self):
+        """Running migration twice produces the same result."""
+        conn = _project_path_db()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/meta/ads/cli", "-Users-foo-repos-meta-ads-cli", "cli")
+        )
+        proj_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO sessions (uuid, project_id, cwd) VALUES (?, ?, ?)",
+            ("sess-idem", proj_id, "/Users/foo/repos/meta-ads-cli")
+        )
+        conn.commit()
+
+        _migrate_project_paths(conn)
+        _migrate_project_paths(conn)  # Second run should be a no-op
+
+        cursor.execute("SELECT path, name FROM projects WHERE id = ?", (proj_id,))
+        row = cursor.fetchone()
+        assert row is not None
+        assert row[0] == "/Users/foo/repos/meta-ads-cli"
+        assert row[1] == "meta-ads-cli"
+        conn.close()
+
+    def test_uses_most_common_cwd(self):
+        """When sessions have different cwds, the most common one wins."""
+        conn = _project_path_db()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/meta/ads/cli", "-Users-foo-repos-meta-ads-cli", "cli")
+        )
+        proj_id = cursor.lastrowid
+
+        real_path = "/Users/foo/repos/meta-ads-cli"
+        other_path = "/Users/foo/repos/other"
+        for i, cwd in enumerate([real_path, real_path, real_path, other_path]):
+            cursor.execute(
+                "INSERT INTO sessions (uuid, project_id, cwd) VALUES (?, ?, ?)",
+                (f"sess-multi-{i}", proj_id, cwd)
+            )
+        conn.commit()
+
+        _migrate_project_paths(conn)
+
+        cursor.execute("SELECT path FROM projects WHERE id = ?", (proj_id,))
+        assert cursor.fetchone()[0] == real_path
+        conn.close()
+
+    def test_skips_project_with_no_sessions(self):
+        """Projects without sessions are left untouched."""
+        conn = _project_path_db()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO projects (path, key, name) VALUES (?, ?, ?)",
+            ("/Users/foo/repos/meta/ads/cli", "-Users-foo-repos-meta-ads-cli", "cli")
+        )
+        proj_id = cursor.lastrowid
+        conn.commit()
+
+        _migrate_project_paths(conn)
+
+        cursor.execute("SELECT path FROM projects WHERE id = ?", (proj_id,))
+        assert cursor.fetchone()[0] == "/Users/foo/repos/meta/ads/cli"
+        conn.close()

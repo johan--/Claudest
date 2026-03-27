@@ -368,12 +368,13 @@ class TestImportProject:
             project_dir = Path(tmpdir) / "-home-user-myproject"
             project_dir.mkdir()
 
-            # Copy a fixture into it
+            # Copy a fixture into it; the fixture has cwd="/Users/samarthgupta/repos/forks/node-banana"
+            # so project_name will be "node-banana" (derived from real cwd, not directory key)
             import shutil
             shutil.copy(FIXTURE_DIR / "linear_3_exchange.jsonl", project_dir / "session1.jsonl")
 
             sessions, messages, skipped = import_project(
-                memory_db, project_dir, exclude_projects=["myproject"]
+                memory_db, project_dir, exclude_projects=["node-banana"]
             )
             # Should return (0, 0, 0) because the project name matches exclusion
             assert sessions == 0

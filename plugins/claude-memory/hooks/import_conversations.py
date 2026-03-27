@@ -277,7 +277,19 @@ def import_project(
     cursor = conn.cursor()
 
     project_key = project_dir.name
-    project_path = parse_project_key(project_key)
+    # Try to get real path from first session's metadata (avoids lossy hyphen reconstruction)
+    project_path = None
+    for f in sorted(project_dir.glob("*.jsonl"))[:1]:
+        try:
+            first_entries = list(parse_all_with_uuids(f))
+            meta = extract_session_metadata(first_entries)
+            if meta.get("cwd"):
+                project_path = meta["cwd"]
+                break
+        except Exception:
+            pass
+    if not project_path:
+        project_path = parse_project_key(project_key)
     project_name = extract_project_name(project_path)
 
     if exclude_projects and project_name in exclude_projects:

@@ -36,7 +36,8 @@ def get_project_key(cwd: str) -> str:
 
 
 def parse_project_key(key: str) -> str:
-    """Convert directory key back to original path."""
+    """Convert directory key back to original path (lossy — hyphens in dir names are lost).
+    Prefer using session cwd metadata when available."""
     return "/" + key.replace("-", "/").lstrip("/")
 
 
