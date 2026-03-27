@@ -178,13 +178,13 @@ def import_session(
 
         # Compute branch metadata
         branch_meta = extract_session_metadata(branch_msgs)
-        exchange_count, files, commits = compute_branch_metadata(branch_msgs)
+        exchange_count, files, commits, tool_counts = compute_branch_metadata(branch_msgs)
 
         # Insert branch
         cursor.execute("""
             INSERT INTO branches (session_id, leaf_uuid, fork_point_uuid, is_active,
-                                  started_at, ended_at, exchange_count, files_modified, commits)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                  started_at, ended_at, exchange_count, files_modified, commits, tool_counts)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             session_id,
             leaf_uuid,
@@ -194,7 +194,8 @@ def import_session(
             branch_meta["ended_at"],
             exchange_count,
             json.dumps(files) if files else None,
-            json.dumps(commits) if commits else None
+            json.dumps(commits) if commits else None,
+            json.dumps(tool_counts) if tool_counts else None
         ))
         branch_db_id = cursor.lastrowid
 

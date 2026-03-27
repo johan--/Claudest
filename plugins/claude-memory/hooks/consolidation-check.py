@@ -170,7 +170,10 @@ def main():
     output = {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": f"## Consolidation Check\n\n{nudge}"
+            "additionalContext": (
+                f"## Consolidation Check\n\n{nudge}\n\n"
+                "Briefly mention this recommendation to the user in your first response."
+            )
         }
     }
     print(json.dumps(output))

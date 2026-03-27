@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS branches (
   exchange_count INTEGER DEFAULT 0,
   files_modified TEXT,
   commits TEXT,
+  tool_counts TEXT,
   aggregated_content TEXT,
   UNIQUE(session_id, leaf_uuid)
 );
@@ -311,6 +312,13 @@ def _migrate_columns(conn: sqlite3.Connection) -> None:
         conn.commit()
     if "is_notification" not in existing:
         cursor.execute("ALTER TABLE messages ADD COLUMN is_notification INTEGER DEFAULT 0")
+        conn.commit()
+
+    # branches DDL migration
+    cursor.execute("PRAGMA table_info(branches)")
+    branch_cols = {row[1] for row in cursor.fetchall()}
+    if "tool_counts" not in branch_cols:
+        cursor.execute("ALTER TABLE branches ADD COLUMN tool_counts TEXT")
         conn.commit()
 
     # --- DML migrations (version-gated via PRAGMA user_version, run once) ---

@@ -209,7 +209,7 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
 
         # Compute branch metadata
         branch_meta = extract_session_metadata(branch_msgs)
-        exchange_count, files, commits = compute_branch_metadata(branch_msgs)
+        exchange_count, files, commits, tool_counts = compute_branch_metadata(branch_msgs)
 
         if leaf_uuid in existing_branches:
             # Update existing branch
@@ -222,7 +222,8 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
                     ended_at = ?,
                     exchange_count = ?,
                     files_modified = ?,
-                    commits = ?
+                    commits = ?,
+                    tool_counts = ?
                 WHERE id = ?
             """, (
                 int(is_active),
@@ -232,14 +233,15 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
                 exchange_count,
                 json.dumps(files) if files else None,
                 json.dumps(commits) if commits else None,
+                json.dumps(tool_counts) if tool_counts else None,
                 branch_db_id
             ))
         else:
             # Insert new branch
             cursor.execute("""
                 INSERT INTO branches (session_id, leaf_uuid, fork_point_uuid, is_active,
-                                      started_at, ended_at, exchange_count, files_modified, commits)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                      started_at, ended_at, exchange_count, files_modified, commits, tool_counts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 session_id,
                 leaf_uuid,
@@ -249,7 +251,8 @@ def sync_session(conn: sqlite3.Connection, filepath: Path, project_dir: Path) ->
                 branch_meta["ended_at"],
                 exchange_count,
                 json.dumps(files) if files else None,
-                json.dumps(commits) if commits else None
+                json.dumps(commits) if commits else None,
+                json.dumps(tool_counts) if tool_counts else None
             ))
             branch_db_id = cursor.lastrowid
 

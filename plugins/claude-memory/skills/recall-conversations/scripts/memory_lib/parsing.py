@@ -182,14 +182,15 @@ def find_all_branches(all_entries: list[dict]) -> list[dict]:
     return branches
 
 
-def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[str]]:
+def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[str], dict[str, int]]:
     """
     Compute metadata for a branch's entries in one pass.
-    Returns: (exchange_count, files_modified, commits)
+    Returns: (exchange_count, files_modified, commits, tool_counts)
     """
     exchange_count = 0
     all_files = []
     all_commits = []
+    tool_counts: dict[str, int] = {}
     has_user = False
 
     for entry in entries:
@@ -214,6 +215,13 @@ def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[s
         if entry_type == "assistant":
             all_files.extend(extract_files_modified(content))
             all_commits.extend(extract_commits(content))
+            # Count tool usage from all assistant entries (including tool-only ones)
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, dict) and item.get("type") == "tool_use":
+                        tool_name = item.get("name", "")
+                        if tool_name:
+                            tool_counts[tool_name] = tool_counts.get(tool_name, 0) + 1
 
     if has_user:
         exchange_count += 1
@@ -226,7 +234,7 @@ def compute_branch_metadata(entries: list[dict]) -> tuple[int, list[str], list[s
             seen[f] = True
             unique_files.append(f)
 
-    return exchange_count, unique_files, all_commits
+    return exchange_count, unique_files, all_commits, tool_counts
 
 
 def aggregate_branch_content(cursor: sqlite3.Cursor, branch_db_id: int) -> str:

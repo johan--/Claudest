@@ -72,6 +72,13 @@ def format_markdown_session(session: dict, verbose: bool = False) -> str:
             for c in commits:
                 lines.append(f"- {c}")
 
+        tool_counts = session.get("tool_counts", {})
+        if tool_counts:
+            sorted_tools = sorted(tool_counts.items(), key=lambda x: x[1], reverse=True)
+            tools_str = ", ".join(f"{name}: {count}" for name, count in sorted_tools)
+            lines.append("\n### Tools Used")
+            lines.append(tools_str)
+
     lines.append("\n### Conversation\n")
 
     for msg in session.get("messages", []):
