@@ -31,7 +31,7 @@ Placement decision: project-independent preference → L0, project-specific tech
 
 ## Early Exit Guard
 
-If user said "remember X" with explicit content already in context:
+If the user said "remember X" with explicit content already in context — and the request is NOT a consolidation trigger ("consolidate", "dream", "extract learnings", "clean up memories", or triggered from the consolidation nudge):
 1. Resolve memory path (see Phase 1 step 1)
 2. Read existing memories to check for duplicates and pick the right layer
 3. Skip to Phase 3 (Propose & Execute) with that content — no subagents needed
@@ -41,45 +41,30 @@ If user said "remember X" with explicit content already in context:
 ### Phase 1: Orient (main session)
 
 1. Resolve memory path: `Glob ~/.claude/projects/*<repo-dir-name>*/memory/MEMORY.md`
+   - If MEMORY.md does not exist, create it with `# Project Memory` header. Note that the Memory Auditor has nothing to audit — in Phase 2, spawn only the Signal Discoverer.
+
+Steps 2-4 can run as parallel tool calls.
+
 2. Read MEMORY.md + list topic files (`Glob memory/*.md` from resolved path)
 3. Read both CLAUDE.md files (`~/.claude/CLAUDE.md` + `<repo>/CLAUDE.md`)
 4. `git log --oneline -20`
 5. Build context snapshot: summarize existing knowledge + list verification targets (file paths, functions, patterns named in memories)
 
-### Phase 2: Gather (2 subagents in parallel)
+### Phase 2: Gather (2 agents in parallel)
 
-Spawn both subagents in a single Agent tool message. Each is a general-purpose subagent with its mission embedded in the prompt. Pass the context snapshot from Phase 1 into both prompts.
+Launch both agent calls in a single message so they run in parallel. Use the Agent tool with:
 
-**Subagent 1 — Memory Auditor**
+- **Memory Auditor**: `subagent_type: "claude-memory:memory-auditor"`. In the `prompt`, include the context snapshot from Phase 1 — memory file contents, git log output, and verification targets list.
 
-Mission: For each memory that names a file path, function, version, or pattern, verify it still exists in the codebase. Cross-reference git log for contradictions. Report every stale, contradicted, or mergeable entry.
+- **Signal Discoverer**: `subagent_type: "claude-memory:signal-discoverer"`. In the `prompt`, include existing memory summaries (for dedup) and the project name.
 
-Input (embed in prompt): memory file contents, git log output, verification targets list.
+If Phase 1 noted MEMORY.md was just created (no existing memories), skip the Memory Auditor and spawn only the Signal Discoverer.
 
-Output format: list of candidates, each with:
-- Category: STALE / CONTRADICT / MERGE / DATE_FIX
-- Which memory entry (quote it)
-- Evidence (what changed or is missing)
-- Suggested action (EDIT / REMOVE with proposed replacement)
-
-Quality rules: state principles not incidents, require codebase evidence for every finding, flag relative dates ("yesterday", "recently") for absolute conversion.
-
-**Subagent 2 — Signal Discoverer**
-
-Mission: Read recent sessions via `recent_chats.py --n 10 --project <project> --verbose`. Extract: user corrections, architectural decisions, recurring patterns, behavioral preferences. Generalize each to a principle. Ignore one-off debugging, tool output noise, and anything already in existing memories.
-
-Input (embed in prompt): existing memory summaries (for dedup), project name, `CLAUDE_PLUGIN_ROOT` path for the script.
-
-Output format: list of FILL_GAP candidates, each with:
-- Principle (1-2 sentences, generalized)
-- Evidence (which session, what the user said/did)
-- Suggested layer (using placement decision)
-
-Quality rules: generalize to principles not incidents, skip anything already captured in existing memories, skip generic programming advice.
+Phase 2 is complete when both agents return reports. If either returns empty, proceed with the other's results only.
 
 ### Phase 3: Synthesize & Propose (main session)
 
-1. Receive both subagent reports
+1. Receive agent reports
 2. Deduplicate across reports and against existing memories
 3. Rank by impact, limit to 3-7 candidates
 4. For each candidate: determine target layer, target section, action (ADD / EDIT / REMOVE)
@@ -107,7 +92,9 @@ Apply approved edits. Output summary table:
 |----------|--------|--------|--------|
 ```
 
-Only if Phase 2 subagents ran (not an early-exit capture): write consolidation marker `Bash(date -u +%Y-%m-%dT%H:%M:%SZ)` → Write `.last-consolidation` in same directory as MEMORY.md.
+Only if Phase 2 agents ran (not an early-exit capture): write consolidation marker `Bash(date -u +%Y-%m-%dT%H:%M:%SZ)` → Write `.last-consolidation` in same directory as MEMORY.md.
+
+Phase 4 is complete when all approved edits are applied and the summary table is presented.
 
 ## Content Quality Rules
 
