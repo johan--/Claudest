@@ -2,6 +2,15 @@
 
 All notable changes to the claude-memory plugin are documented here.
 
+## [0.8.30] - 2026-04-01
+
+### Added
+- Context-aware session selection on `/clear`: injects the current session (with stale summary bypass) plus a supplementary substantive session, falling back to startup logic when the current session is noise
+
+### Fixed
+- Add `ORDER BY b.ended_at DESC LIMIT 1` to current-session query for deterministic branch selection
+- Respect `max_context_sessions` setting on the clear path (previously always injected up to 2 sessions)
+
 ## [0.8.4] - 2026-03-10
 
 ### Changed

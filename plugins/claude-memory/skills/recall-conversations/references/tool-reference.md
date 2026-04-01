@@ -8,16 +8,16 @@ Retrieve recent conversation sessions with all messages.
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/recall-conversations/scripts/recent_chats.py --n 3
 ```
 
-| Option                    | Effect                                                 |     |
-| ------------------------- | ------------------------------------------------------ | --- |
-| `--n N`                   | Number of sessions (1-20, default 3)                   |     |
-| `--sort-order`            | 'desc' (newest first, default) or 'asc'                |     |
-| `--before DATE`           | Sessions before this datetime (ISO)                    |     |
-| `--after DATE`            | Sessions after this datetime (ISO)                     |     |
-| `--project NAME`          | Filter by project name(s), comma-separated             |     |
-| `--verbose`               | Include files_modified and commits                     |     |
-| `--format`                | 'markdown' (default) or 'json'                         |     |
-| `--include-notifications` | Include task notification messages (hidden by default) |     |
+| Option                    | Effect                                                 |
+| ------------------------- | ------------------------------------------------------ |
+| `--n N`                   | Number of sessions (1-20, default 3)                   |
+| `--sort-order`            | 'desc' (newest first, default) or 'asc'                |
+| `--before DATE`           | Sessions before this datetime (ISO)                    |
+| `--after DATE`            | Sessions after this datetime (ISO)                     |
+| `--project NAME`          | Filter by project name(s), comma-separated             |
+| `--verbose`               | Include files_modified and commits                     |
+| `--format`                | 'markdown' (default) or 'json'                         |
+| `--include-notifications` | Include task notification messages (hidden by default) |
 
 Use `--verbose` for lenses that need file/commit context (restore-context, review-process, run-retro).
 

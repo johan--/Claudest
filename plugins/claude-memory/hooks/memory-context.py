@@ -69,6 +69,8 @@ _CURRENT_SESSION_QUERY = """
     WHERE s.project_id = ?
       AND s.uuid = ?
       AND s.parent_session_id IS NULL
+    ORDER BY b.ended_at DESC
+    LIMIT 1
 """
 
 
@@ -150,10 +152,11 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
 
                 filtered = [current]
 
-                # Always look for a supplementary substantive session
-                supplementary = _find_first_substantive(cursor, project_id, current_session_id)
-                if supplementary:
-                    filtered.append(supplementary)
+                # Add supplementary substantive session if max_sessions allows
+                if max_sessions > 1:
+                    supplementary = _find_first_substantive(cursor, project_id, current_session_id)
+                    if supplementary:
+                        filtered.append(supplementary)
 
                 _load_messages_for(cursor, filtered)
                 return _finalize(filtered)
