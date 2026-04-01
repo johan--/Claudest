@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claudest is a curated Claude Code plugin marketplace containing five plugins: **claude-memory** (conversation memory with full-text search and context injection), **claude-utilities** (convert-to-markdown via ezycopy), **claude-skills** (skill authoring and repair), **claude-coding** (git workflows and CLAUDE.md maintenance), and **claude-thinking** (structured thinking and deliberation tools). There is no build system or package manager — plugin runtime is Python 3.7+ stdlib-only. Tests use pytest with hypothesis (dev dependencies only).
+Claudest is a curated Claude Code plugin marketplace containing eight plugins: **claude-memory** (conversation memory with full-text search and context injection), **claude-utilities** (convert-to-markdown via ezycopy), **claude-skills** (skill authoring and repair), **claude-coding** (git workflows and CLAUDE.md maintenance), **claude-thinking** (structured thinking and deliberation tools), **claude-research** (deep multi-source research), **claude-content** (image generation, video processing), and **claude-claw** (OpenClaw advisory and skill porting). There is no build system or package manager — plugin runtime is Python 3.7+ stdlib-only. Tests use pytest with hypothesis (dev dependencies only).
 
 ## Setup (after cloning)
 
@@ -64,3 +64,5 @@ Commit messages use conventional commits: `feat(memory):`, `fix(memory):`, `chor
 Settings are hardcoded defaults in `memory_lib/db.py:DEFAULT_SETTINGS` (the YAML settings file was removed since PyYAML is not stdlib and settings were silently ignored for most users).
 
 Skill descriptions in SKILL.md frontmatter should be short and focused — verbose descriptions pollute the agent's context window since they're loaded whenever the skill triggers.
+
+Plugin agents invoked explicitly via `subagent_type` (not auto-triggered) don't need examples in their description frontmatter — examples serve the routing model's auto-trigger decision, which never fires for explicit spawns. Prefer defining subagents as named plugin agents (`agents/*.md` with `subagent_type: "plugin:agent-name"`) over inline prompt templates in SKILL.md — named agents reliably produce parallel execution and self-discover script paths at runtime.

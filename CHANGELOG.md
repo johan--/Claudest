@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2026-03-27]
+
+### Added
+- Add plugin agents (memory-auditor, signal-discoverer) for extract-learnings consolidation (claude-memory)
+- Add precomputed context summaries for session injection on startup (claude-memory)
+- Add consolidation mode to extract-learnings with check hook nudge (claude-memory)
+- Add disposition tag, topic rendering, and gap summaries to session selection (claude-memory)
+- Add tool counts to branch metadata and verbose output (claude-memory)
+- Add council skill for multi-perspective deliberation (claude-thinking)
+- Add code-auditor and architecture-auditor agents (claude-coding)
+
+### Changed
+- Rewrite extract-learnings as unified subagent workflow (claude-memory)
+- Widen context summary window to first 2 + last 6 exchanges (claude-memory)
+- Tighten skill descriptions for context efficiency across plugins (claude-skills, claude-coding)
+- Enforce dynamic content injection with examples and severity bump (claude-skills)
+
+### Fixed
+- Add cross-platform hook runner for Windows Git Bash compatibility (claude-memory)
+- Fix key conflicts in import_conversations and add missing indexes (claude-memory)
+- Scope agent Bash access and add phase exit conditions (claude-memory)
+- Add WAL mode consistency to backfill check (claude-memory)
+- Fix routing accuracy and early invocation for generate-image skill (claude-content)
+- Add cross-skill routing boundaries and fix broken reference (claude-skills)
+- Fix variable-binding preservation in meta-skills (claude-skills)
+
 ## [2026-03-17]
 
 ### Added

@@ -34,13 +34,13 @@ To enable auto-updates, run `/plugin`, go to the Marketplaces tab, and toggle au
 
 <a id="claude-memory"></a>
 
-### 🧠 claude-memory &nbsp; ![v0.8.29](https://img.shields.io/badge/v0.8.29-blue?style=flat-square)
+### 🧠 claude-memory &nbsp; ![v0.8.30](https://img.shields.io/badge/v0.8.30-blue?style=flat-square)
 
 Conversation memory for Claude Code. Stores every session in a SQLite database with full-text search (FTS5, BM25 ranking, zero external dependencies) and makes past conversations available to the agent automatically.
 
-- **Automatic context injection** — on every session start, the most recent meaningful session is injected into context. The agent knows what you worked on last time before you say a word.
+- **Automatic context injection** — on every session start, precomputed context summaries from recent sessions are injected automatically. The agent knows what you worked on last time before you say a word.
 - **`recall-conversations`** — search conversation history by keywords, browse recent sessions, or run structured analyses like retrospectives and gap-finding.
-- **`extract-learnings`** — reads past conversations, identifies non-obvious insights worth preserving, and proposes placing them at the right layer in the memory hierarchy (CLAUDE.md, MEMORY.md, or topic files).
+- **`extract-learnings`** — reads past conversations, identifies non-obvious insights worth preserving, and proposes placing them at the right layer in the memory hierarchy (CLAUDE.md, MEMORY.md, or topic files). Includes a consolidation mode with dedicated `memory-auditor` and `signal-discoverer` agents for batch processing.
 
 For the full story behind the architecture: [What I Learned Building a Memory System for My Coding Agent](https://www.reddit.com/r/ClaudeCode/comments/1r1w397/comment/o5294lk/).
 
@@ -78,7 +78,7 @@ brew install bird            # X / Twitter
 
 ### 💻 claude-coding &nbsp; ![v0.2.15](https://img.shields.io/badge/v0.2.15-blue?style=flat-square)
 
-Coding workflow skills for Claude Code. Eight skills covering the commit loop, project maintenance, and documentation.
+Coding workflow skills for Claude Code. Eight skills and two agents covering the commit loop, project maintenance, documentation, and code quality.
 
 - **`commit`** — analyzes changes, groups files by purpose, runs linters, writes conventional commit messages. Splits multi-concern changes automatically.
 - **`push-pr`** — cuts a feature branch if needed, pushes, and creates or updates a PR. Calls `commit` first if there are uncommitted changes.
@@ -88,6 +88,8 @@ Coding workflow skills for Claude Code. Eight skills covering the commit loop, p
 - **`make-changelog`** — creates or updates CHANGELOG.md from git history using Keep-a-Changelog format. Parallel Haiku subagents for token efficiency.
 - **`update-readme`** — refreshes an existing README using codebase state and git history with three parallel research agents.
 - **`setup-github-actions`** — scaffolds and validates GitHub Actions workflows for your project.
+- **`code-auditor`** — proactive code quality agent for readability, correctness, dead code, and naming consistency.
+- **`architecture-auditor`** — architectural review agent for cross-module boundary design and structural decisions.
 
 ```
 /plugin install claude-coding@claudest
