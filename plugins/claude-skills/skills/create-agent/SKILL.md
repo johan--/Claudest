@@ -15,7 +15,7 @@ complex multi-step work to autonomous subprocesses with isolated context windows
 
 **Agents vs Skills — know the difference before generating:**
 
-- **Agents** run in isolated context, have second-person system prompts ("You are..."), use `<example>` XML blocks in descriptions, and are spawned via the Task tool
+- **Agents** run in isolated context, have second-person system prompts ("You are..."), use concise `>` folded scalar descriptions (50-70 tokens, no `<example>` blocks), and are spawned via the Task tool
 - **Skills** inject inline into the current conversation, use imperative body instructions for Claude to follow, and route via description matching on trigger phrases
 
 ## Phase 0: Understand Requirements

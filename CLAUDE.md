@@ -1,68 +1,60 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-Claudest is a curated Claude Code plugin marketplace containing eight plugins: **claude-memory** (conversation memory with full-text search and context injection), **claude-utilities** (convert-to-markdown via ezycopy), **claude-skills** (skill authoring and repair), **claude-coding** (git workflows and CLAUDE.md maintenance), **claude-thinking** (structured thinking and deliberation tools), **claude-research** (deep multi-source research), **claude-content** (image generation, video processing), and **claude-claw** (OpenClaw advisory and skill porting). There is no build system or package manager — plugin runtime is Python 3.7+ stdlib-only. Tests use pytest with hypothesis (dev dependencies only).
+Claudest is a curated Claude Code plugin marketplace containing eight plugins: **claude-memory** (conversation memory with full-text search and context injection), **claude-utilities** (convert-to-markdown via ezycopy), **claude-skills** (skill authoring and repair), **claude-coding** (git workflows and CLAUDE.md maintenance), **claude-thinking** (structured thinking and deliberation tools), **claude-research** (deep multi-source research), **claude-content** (image generation, video processing), and **claude-claw** (OpenClaw advisory and skill porting). No build system or package manager — plugin runtime is Python 3.7+ stdlib-only. Tests use pytest with hypothesis (dev dependencies only).
 
-## Setup (after cloning)
+## Setup
 
 ```bash
-pip install pre-commit   # install hook framework (one-time, dev only)
-pre-commit install       # activate hooks for this repo
+pip install pre-commit && pre-commit install
 ```
 
-The `scripts/auto-version.py` hook auto-bumps the patch version of any plugin with staged code changes, then syncs both the plugin README badge and the root README section-header badge in the same pass. It skips plugins where only `README.md` or `CHANGELOG.md` are staged (docs-only), and skips any plugin whose `plugin.json` is already staged (manual bump in progress).
+The `scripts/auto-version.py` pre-commit hook auto-bumps patch versions for plugins with staged code changes, then syncs both the plugin README badge and root README section-header badge. Skips docs-only changes (README/CHANGELOG) and plugins with manually staged `plugin.json`.
 
 ## Development Commands
 
 ```bash
-# Re-import all conversations into the memory DB
+# Re-import all conversations (delete DB first to reimport from scratch — no --force flag)
 python3 plugins/claude-memory/hooks/import_conversations.py
 
-# Import with stats output
+# Import with stats
 python3 plugins/claude-memory/hooks/import_conversations.py --stats
 
-# Test context injection manually
+# Test context injection
 echo '{"source":"startup","session_id":"test","cwd":"/some/path"}' | python3 plugins/claude-memory/hooks/memory-context.py
 
-# Test session sync manually
+# Test session sync
 echo '{"session_id":"<uuid>"}' | python3 plugins/claude-memory/hooks/sync_current.py
 ```
 
-No `--force` flag exists for import — delete `~/.claude-memory/conversations.db` and re-run to reimport from scratch.
-
 ## Architecture
-
-### Plugin Structure
-
-Each plugin follows the Claude Code plugin convention: `.claude-plugin/plugin.json` for metadata, `hooks/` for lifecycle hooks, `commands/` for slash commands, and `skills/` for auto-triggered capabilities.
 
 ### claude-memory Hook Lifecycle
 
-On **SessionStart**, two hooks fire in order: `memory-setup.py` creates the `~/.claude-memory/` directory and kicks off a background import if the DB doesn't exist, then `memory-context.py` (on `startup|clear` events only) queries recent sessions and injects them as additional context via `hookSpecificOutput`. On **Stop**, `memory-sync.py` writes hook input to a temp file and spawns `sync_current.py --input-file` in the background to incrementally sync the current session to the DB without blocking shutdown. All hooks are Python (no bash) for cross-platform compatibility.
+On **SessionStart**, three hooks fire in order on `startup|clear`:
+1. `memory-setup.py` (matcher: `*`) — creates `~/.claude-memory/`, kicks off background import if DB missing
+2. `memory-context.py` — queries recent sessions, injects context via `hookSpecificOutput`
+3. `consolidation-check.py` — checks if memory consolidation is needed
 
-### Database (v3 Schema)
+On **Stop**, `memory-sync.py` writes hook input to a temp file and spawns `sync_current.py --input-file` in the background to incrementally sync the session without blocking shutdown. All hooks are Python (no bash) for cross-platform compatibility.
 
-SQLite at `~/.claude-memory/conversations.db` with WAL mode and 5s busy_timeout for concurrent access safety. The key design: messages are stored once per session (deduped), and branches (from conversation rewinds) are tracked via a many-to-many `branch_messages` table. Full-text search uses a cascade: FTS5 (best, BM25 ranking) → FTS4 (MATCH + snippet, no BM25) → LIKE fallback (no stemming). Schema is split into `SCHEMA_CORE` (tables/indexes) and `SCHEMA_FTS5`/`SCHEMA_FTS4` variants, applied conditionally based on `detect_fts_support()`. Auto-migrated on connection — if the schema version is outdated, the DB is deleted and recreated.
+### Database
 
-Tables: `projects`, `sessions`, `branches`, `messages`, `branch_messages`, `import_log`, `messages_fts` (virtual), `branches_fts` (virtual).
+SQLite at `~/.claude-memory/conversations.db` with WAL mode and 5s busy_timeout. Messages are stored once per session (deduped); branches (from conversation rewinds) tracked via `branch_messages` join table. Full-text search cascade: FTS5 → FTS4 → LIKE fallback. Schema auto-migrated on connection — outdated schema triggers delete-and-recreate.
 
 ### Shared Code
 
-`plugins/claude-memory/skills/recall-conversations/scripts/memory_lib/` is the shared utility package used by all hooks and skill scripts. It is split into four focused modules: `db.py` (database connection, schema, settings, logging), `content.py` (message content extraction and tool detection), `parsing.py` (JSONL parsing, branch detection via UUID parent chain analysis, metadata extraction), and `formatting.py` (session formatting, time/path utilities). The `extract_text_content()` function in `content.py` returns a 4-tuple `(text, has_tool_use, has_thinking, tool_summary_json)` — tool markers are never materialized into stored text; instead tool counts are stored as compact JSON in `messages.tool_summary`.
-
-### Session Selection Algorithm
-
-`memory-context.py:select_sessions` iterates recent sessions (excluding current session and subagents), skips those with `exchange_count <= 1`. For 2-exchange sessions it appends and keeps looking (up to `max_context_sessions`). For sessions with >2 exchanges it appends and stops. This means multiple sessions are only injected when the most recent ones are very short.
+`plugins/claude-memory/skills/recall-conversations/scripts/memory_lib/` is the shared utility package used by all hooks and skill scripts (5 modules: `db.py`, `content.py`, `parsing.py`, `formatting.py`, `summarizer.py`).
 
 ## Conventions
 
-Commit messages use conventional commits: `feat(memory):`, `fix(memory):`, `chore(memory):`, `docs:`, `refactor(memory):`. Version is tracked in two places that must stay in sync: each plugin's `.claude-plugin/plugin.json` and the root `.claude-plugin/marketplace.json`. Always bump version before pushing changes.
+Commit messages: conventional commits scoped to plugin (`feat(memory):`, `fix(skills):`, `docs:`, `refactor(memory):`).
 
-Settings are hardcoded defaults in `memory_lib/db.py:DEFAULT_SETTINGS` (the YAML settings file was removed since PyYAML is not stdlib and settings were silently ignored for most users).
+Version tracked in two places that must stay in sync: each plugin's `.claude-plugin/plugin.json` and root `.claude-plugin/marketplace.json`.
 
-Skill descriptions in SKILL.md frontmatter should be short and focused — verbose descriptions pollute the agent's context window since they're loaded whenever the skill triggers.
+Settings are hardcoded in `memory_lib/db.py:DEFAULT_SETTINGS` (PyYAML removed — not stdlib).
 
-All agent descriptions use concise `>` folded scalar format (50-70 tokens) without `<example>` blocks — token budget matters since descriptions load into context every session. Explicit agents don't benefit from examples because auto-trigger routing never fires; proactive agents don't benefit because the routing model responds to token patterns in the description text, not worked examples. Prefer defining subagents as named plugin agents (`agents/*.md` with `subagent_type: "plugin:agent-name"`) over inline prompt templates in SKILL.md — named agents reliably produce parallel execution and self-discover script paths at runtime.
+Skill descriptions in SKILL.md frontmatter: short and focused — verbose descriptions pollute context.
+
+All agent descriptions use concise `>` folded scalar format (50-70 tokens) without `<example>` blocks — token budget matters since descriptions load into context every session. Explicit agents don't benefit from examples (auto-trigger routing never fires); proactive agents don't benefit (routing model responds to token patterns, not worked examples). Prefer named plugin agents (`agents/*.md` with `subagent_type: "plugin:agent-name"`) over inline prompt templates — named agents reliably produce parallel execution and self-discover script paths at runtime.
