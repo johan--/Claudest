@@ -113,19 +113,18 @@ def validate_agent(agent_path, strict=False):
                     "Description should start with 'Use this agent when...'",
                     "major",
                 ))
-            example_count = len(re.findall(r"<example>", desc))
-            if example_count == 0:
+            token_estimate = len(desc.split())
+            if token_estimate > 80:
                 errors.append(build_error(
                     "description",
-                    "Description has no <example> blocks — add 2-4 for trigger coverage",
-                    "major",
+                    f"Description is ~{token_estimate} tokens — target 50-70 for context budget",
+                    "minor",
                 ))
-            elif example_count < 2:
-                severity = "major" if strict else "minor"
+            if "<example>" in desc:
                 errors.append(build_error(
                     "description",
-                    f"Only {example_count} <example> block(s) — add at least 2 for trigger coverage",
-                    severity,
+                    "<example> blocks waste context without improving routing — use concise prose instead",
+                    "major",
                 ))
 
     # model

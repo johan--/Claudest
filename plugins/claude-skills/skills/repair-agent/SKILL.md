@@ -239,13 +239,13 @@ example of the report format and a before/after repair session.
 
 ```
 AGENT IMPROVEMENT REPORT: <agent-name>
-System prompt: [N] lines | Description: [N] examples | Tools: [listed / unrestricted]
+System prompt: [N] lines | Description: [N] tokens | Tools: [listed / unrestricted]
 
 VIOLATIONS
 ──────────
 CRITICAL
   [D1] Description does not start with "Use this agent when..." — routing model cannot
-       match. Fix: rewrite opening as "Use this agent when [trigger conditions]. Examples:"
+       match. Fix: rewrite opening as "Use this agent when [trigger conditions]."
 
 MAJOR
   [D3] Body uses first-person throughout ("I will analyze...") — system prompt must be

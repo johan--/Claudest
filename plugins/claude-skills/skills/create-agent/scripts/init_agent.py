@@ -21,26 +21,10 @@ MAX_AGENT_NAME_LENGTH = 50
 AGENT_TEMPLATE = """\
 ---
 name: {name}
-description: |
-  Use this agent when [TODO: describe trigger conditions]. Examples:
-
-  <example>
-  Context: [TODO: describe a triggering situation]
-  user: "[TODO: example user message]"
-  assistant: "[TODO: how Claude responds before delegating]"
-  <commentary>
-  [TODO: why this agent should trigger here]
-  </commentary>
-  </example>
-
-  <example>
-  Context: [TODO: second triggering situation]
-  user: "[TODO: second example user message]"
-  assistant: "[TODO: response referencing this agent]"
-  <commentary>
-  [TODO: routing reasoning for this example]
-  </commentary>
-  </example>
+description: >
+  Use this agent when [TODO: describe trigger conditions].
+  [TODO: "Recommended PROACTIVELY after..." if applicable.]
+  Not for [TODO: out-of-scope tasks] — use [TODO: correct agent].
 model: inherit
 color: blue
 ---
@@ -134,7 +118,7 @@ def init_agent(name, path, output_format):
         print("\nNext steps:")
         print(f"  1. Edit {agent_file}")
         print("     - Complete all [TODO] placeholders")
-        print("     - Add 2-4 <example> blocks to description")
+        print("     - Keep description to 50-70 tokens (no <example> blocks)")
         print("     - Write system prompt in second person ('You are...')")
         print(f"  2. Validate: validate_agent.py {agent_file} --output json")
     return True
