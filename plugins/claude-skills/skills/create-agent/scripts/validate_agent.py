@@ -11,6 +11,8 @@ Examples:
     validate_agent.py agents/my-agent.md --strict --output json
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import re
@@ -199,7 +201,7 @@ def main():
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Enable stricter checks (second-person body, example count threshold)",
+        help="Enable stricter checks (second-person body, unexpected field severity)",
     )
     parser.add_argument(
         "--output",

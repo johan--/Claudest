@@ -10,6 +10,8 @@ Examples:
     init_agent.py test-generator --path .claude/agents --output json
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import re
