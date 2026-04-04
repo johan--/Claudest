@@ -37,6 +37,8 @@ On **SessionStart**, three hooks fire in order on `startup|clear`:
 2. `memory-context.py` — queries recent sessions, injects context via `hookSpecificOutput`
 3. `consolidation-check.py` — checks if memory consolidation is needed
 
+On **SessionEnd** (matcher: `clear`), `clear-handoff.py` writes `~/.claude-memory/clear-handoff.json` with the dying session's `session_id`, `cwd`, and `transcript_path` so the next SessionStart can hard-link to the cleared-from session.
+
 On **Stop**, `memory-sync.py` writes hook input to a temp file and spawns `sync_current.py --input-file` in the background to incrementally sync the session without blocking shutdown. All hooks are Python (no bash) for cross-platform compatibility.
 
 ### Database
