@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""
-SessionEnd hook (matcher: clear) — writes a handoff file so the subsequent
-SessionStart hook can hard-link to this session.
-
-Receives session_id and cwd from the SessionEnd payload.
-No stdout required — SessionEnd hooks don't consume output.
-"""
+"""SessionEnd hook (matcher: clear) — writes handoff file for SessionStart to link sessions."""
 
 from __future__ import annotations
 
@@ -36,37 +30,25 @@ def main():
     try:
         hook_input = json.loads(raw)
     except (json.JSONDecodeError, EOFError):
-        _log(f"parse error. raw={raw[:100]!r}")
-        return
-
-    end_reason = hook_input.get("end_reason", "")
-    _log(f"fired. end_reason={end_reason!r} session={hook_input.get('session_id')} cwd={hook_input.get('cwd')}")
-
-    # Defensive: if matcher isn't filtering, check end_reason ourselves
-    if end_reason != "clear":
         return
 
     session_id = hook_input.get("session_id")
     cwd = hook_input.get("cwd")
+    _log(f"fired. session={session_id} cwd={cwd}")
+
     if not session_id or not cwd:
-        _log("missing session_id or cwd — aborting")
         return
 
     settings = load_settings()
     db_path = get_db_path(settings)
     handoff_path = db_path.parent / "clear-handoff.json"
 
-    handoff = {
+    handoff_path.write_text(json.dumps({
         "session_id": session_id,
         "cwd": cwd,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-
-    try:
-        handoff_path.write_text(json.dumps(handoff))
-        _log(f"handoff written. session={session_id}")
-    except OSError as e:
-        _log(f"write failed: {e}")
+    }))
+    _log(f"handoff written. session={session_id}")
 
 
 if __name__ == "__main__":
