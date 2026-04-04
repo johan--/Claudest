@@ -28,9 +28,15 @@ def main():
     session_id = hook_input.get("session_id")
     cwd = hook_input.get("cwd")
 
-    # Detect /clear or /new (strip surrounding whitespace)
+    # Detect /clear or /new — prompt may be plain text or XML-wrapped command
+    # e.g. "<command-name>/clear</command-name>\n<command-message>clear</command-message>"
     stripped = prompt.strip()
-    if stripped not in ("/clear", "/new"):
+    is_clear = (
+        stripped in ("/clear", "/new")
+        or "<command-name>/clear</command-name>" in prompt
+        or "<command-name>/new</command-name>" in prompt
+    )
+    if not is_clear:
         print(json.dumps({"continue": True}))
         return
 
