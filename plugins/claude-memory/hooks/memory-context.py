@@ -118,54 +118,67 @@ def _finalize(entries: list[dict]) -> list[dict]:
     return entries
 
 
-def _find_cleared_from_session_uuid(session_id: str, cwd: str) -> str | None:
+def _find_cleared_from_session_uuid(current_session_id: str, cwd: str) -> str | None:
     """
-    Identify the session that was cleared from by reading the new session's JSONL.
+    Identify the session that was cleared from by scanning project JSONL files.
 
-    When /clear fires, the new JSONL starts with the /clear entry which has a
-    parentUuid pointing to the last message of the old session. We look up that
-    parentUuid in the DB to find which session it belongs to.
+    When /clear fires, Claude Code writes a /clear entry into the *old* session's
+    JSONL (the session stays open until the new one starts). We scan JSONL files
+    for the project, looking for one that has /clear near its end within the last
+    30 seconds — that file's sessionId is the cleared-from session.
     """
-    # Derive project key from cwd to locate the JSONL file
-    project_key = cwd.replace("/", "-").replace("\\", "-").lstrip("-")
+    import time as _time
+    now = _time.time()
     projects_dir = Path.home() / ".claude" / "projects"
 
-    # Find the matching project directory
-    jsonl_path = None
-    for proj_dir in projects_dir.iterdir():
-        candidate = proj_dir / f"{session_id}.jsonl"
-        if candidate.exists():
-            jsonl_path = candidate
+    # Find the project directory that contains the current session's JSONL
+    proj_dir = None
+    for d in projects_dir.iterdir():
+        if (d / f"{current_session_id}.jsonl").exists():
+            proj_dir = d
             break
 
-    if not jsonl_path:
+    if not proj_dir:
         return None
 
-    # Read the first few lines to find the /clear entry and its parentUuid
-    parent_uuid = None
+    # Scan JSONL files modified in the last 30 seconds (excluding current session)
+    candidates = []
     try:
-        with open(jsonl_path) as f:
-            for _ in range(6):
-                line = f.readline()
-                if not line:
-                    break
+        for f in proj_dir.glob("*.jsonl"):
+            if f.stem == current_session_id:
+                continue
+            try:
+                age = now - f.stat().st_mtime
+                if age <= 30:
+                    candidates.append((age, f))
+            except OSError:
+                pass
+    except OSError:
+        return None
+
+    # Check most recently modified first
+    candidates.sort(key=lambda x: x[0])
+
+    for _, jsonl_path in candidates:
+        try:
+            # Read last 10 lines — /clear is near the tail of the old session
+            with open(jsonl_path) as f:
+                lines = f.readlines()
+            for line in reversed(lines[-10:]):
                 try:
                     entry = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                content = ""
                 msg = entry.get("message", {})
-                if isinstance(msg.get("content"), str):
-                    content = msg["content"]
-                elif isinstance(msg.get("content"), list):
-                    content = str(msg["content"])
+                content = msg.get("content", "") if isinstance(msg.get("content"), str) else str(msg.get("content", ""))
                 if "/clear" in content or "/new" in content:
-                    parent_uuid = entry.get("parentUuid")
-                    break
-    except OSError:
-        return None
+                    session_uuid = entry.get("sessionId")
+                    if session_uuid and session_uuid != current_session_id:
+                        return session_uuid
+        except OSError:
+            continue
 
-    return parent_uuid
+    return None
 
 
 def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_id: str, max_sessions: int, source: str = "startup", cwd: str = "") -> list[dict]:
@@ -173,8 +186,8 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
     Select sessions for context using the exchange-count algorithm.
 
     On startup: exclude current session, find most recent substantive + recent shorts.
-    On clear: read new session's JSONL to find the /clear entry's parentUuid, look
-              it up in the DB to identify the exact cleared-from session.
+    On clear: scan project JSONL files for a recent /clear entry to hard-link to
+              the exact cleared-from session by its sessionId.
               If cleared-from is not substantive (≤2 exchanges), also append the most
               recent substantive session as supplementary context.
               Falls through to startup logic if cleared-from session can't be identified.
@@ -188,40 +201,30 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
         return []
     project_id = row[0]
 
-    # --- Clear path: hard-link via parentUuid in new session's JSONL ---
+    # --- Clear path: hard-link via JSONL scan for recent /clear entry ---
     if source == "clear":
-        parent_uuid = _find_cleared_from_session_uuid(current_session_id, cwd)
+        prev_session_uuid = _find_cleared_from_session_uuid(current_session_id, cwd)
 
-        if parent_uuid:
-            # Find which session owns this message uuid
-            cursor.execute("""
-                SELECT s.uuid FROM messages m
-                JOIN sessions s ON m.session_id = s.id
-                WHERE m.uuid = ?
-            """, (parent_uuid,))
-            row = cursor.fetchone()
+        if prev_session_uuid:
+            cursor.execute(_SESSION_BY_UUID_QUERY, (project_id, prev_session_uuid))
+            prev_row = cursor.fetchone()
 
-            if row:
-                prev_session_uuid = row[0]
-                cursor.execute(_SESSION_BY_UUID_QUERY, (project_id, prev_session_uuid))
-                prev_row = cursor.fetchone()
+            if prev_row:
+                cleared_from = _row_to_entry(prev_row)
 
-                if prev_row:
-                    cleared_from = _row_to_entry(prev_row)
+                if cleared_from["exchange_count"] > 0:
+                    filtered = [cleared_from]
 
-                    if cleared_from["exchange_count"] > 0:
-                        filtered = [cleared_from]
+                    # If cleared-from is not substantive, add supplementary
+                    if cleared_from["exchange_count"] <= 2 and max_sessions > 1:
+                        supplementary = _find_first_substantive(cursor, project_id, prev_session_uuid)
+                        if supplementary:
+                            filtered.append(supplementary)
 
-                        # If cleared-from is not substantive, add supplementary
-                        if cleared_from["exchange_count"] <= 2 and max_sessions > 1:
-                            supplementary = _find_first_substantive(cursor, project_id, prev_session_uuid)
-                            if supplementary:
-                                filtered.append(supplementary)
+                    _load_messages_for(cursor, filtered)
+                    return _finalize(filtered)
 
-                        _load_messages_for(cursor, filtered)
-                        return _finalize(filtered)
-
-        # parentUuid not found or session not in DB — fall through to startup logic
+        # Session not found in DB or no recent /clear — fall through to startup logic
 
     # --- Startup path (also fallback for clear with no handoff) ---
     cursor.execute(_CANDIDATE_QUERY, (project_id, current_session_id))
