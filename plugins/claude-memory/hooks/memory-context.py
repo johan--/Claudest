@@ -118,54 +118,66 @@ def _finalize(entries: list[dict]) -> list[dict]:
     return entries
 
 
-def _read_handoff(db_path: Path, cwd: str) -> str | None:
+def _find_cleared_from_session_uuid(session_id: str, cwd: str) -> str | None:
     """
-    Read and consume the clear-handoff.json file.
-    Returns the previous session_id if the handoff is valid (recent, same cwd),
-    otherwise None. Always deletes the file if it exists.
+    Identify the session that was cleared from by reading the new session's JSONL.
+
+    When /clear fires, the new JSONL starts with the /clear entry which has a
+    parentUuid pointing to the last message of the old session. We look up that
+    parentUuid in the DB to find which session it belongs to.
     """
-    handoff_path = db_path.parent / "clear-handoff.json"
-    if not handoff_path.exists():
+    # Derive project key from cwd to locate the JSONL file
+    project_key = cwd.replace("/", "-").replace("\\", "-").lstrip("-")
+    projects_dir = Path.home() / ".claude" / "projects"
+
+    # Find the matching project directory
+    jsonl_path = None
+    for proj_dir in projects_dir.iterdir():
+        candidate = proj_dir / f"{session_id}.jsonl"
+        if candidate.exists():
+            jsonl_path = candidate
+            break
+
+    if not jsonl_path:
         return None
+
+    # Read the first few lines to find the /clear entry and its parentUuid
+    parent_uuid = None
     try:
-        data = json.loads(handoff_path.read_text())
-    except (OSError, json.JSONDecodeError):
+        with open(jsonl_path) as f:
+            for _ in range(6):
+                line = f.readline()
+                if not line:
+                    break
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                content = ""
+                msg = entry.get("message", {})
+                if isinstance(msg.get("content"), str):
+                    content = msg["content"]
+                elif isinstance(msg.get("content"), list):
+                    content = str(msg["content"])
+                if "/clear" in content or "/new" in content:
+                    parent_uuid = entry.get("parentUuid")
+                    break
+    except OSError:
         return None
-    finally:
-        try:
-            handoff_path.unlink()
-        except OSError:
-            pass
 
-    session_id = data.get("session_id")
-    handoff_cwd = data.get("cwd")
-    timestamp_str = data.get("timestamp")
-    if not session_id or handoff_cwd != cwd:
-        return None
-
-    # Stale guard: reject handoffs older than 30 seconds
-    if timestamp_str:
-        try:
-            from datetime import datetime, timezone
-            written = datetime.fromisoformat(timestamp_str)
-            age = (datetime.now(timezone.utc) - written).total_seconds()
-            if age > 30:
-                return None
-        except Exception:
-            pass
-
-    return session_id
+    return parent_uuid
 
 
-def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_id: str, max_sessions: int, source: str = "startup", db_path: Path | None = None, cwd: str = "") -> list[dict]:
+def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_id: str, max_sessions: int, source: str = "startup", cwd: str = "") -> list[dict]:
     """
     Select sessions for context using the exchange-count algorithm.
 
     On startup: exclude current session, find most recent substantive + recent shorts.
-    On clear: read handoff file to hard-link to the cleared-from session directly.
-              If cleared-from session is not substantive (≤2 exchanges), also append
-              the most recent substantive session as supplementary context.
-              Falls through to startup logic if no valid handoff or session not in DB.
+    On clear: read new session's JSONL to find the /clear entry's parentUuid, look
+              it up in the DB to identify the exact cleared-from session.
+              If cleared-from is not substantive (≤2 exchanges), also append the most
+              recent substantive session as supplementary context.
+              Falls through to startup logic if cleared-from session can't be identified.
     """
     cursor = conn.cursor()
 
@@ -176,30 +188,40 @@ def select_sessions(conn: sqlite3.Connection, project_key: str, current_session_
         return []
     project_id = row[0]
 
-    # --- Clear path: hard-link via handoff file ---
-    if source == "clear" and db_path is not None:
-        prev_session_id = _read_handoff(db_path, cwd)
+    # --- Clear path: hard-link via parentUuid in new session's JSONL ---
+    if source == "clear":
+        parent_uuid = _find_cleared_from_session_uuid(current_session_id, cwd)
 
-        if prev_session_id:
-            cursor.execute(_SESSION_BY_UUID_QUERY, (project_id, prev_session_id))
-            prev_row = cursor.fetchone()
+        if parent_uuid:
+            # Find which session owns this message uuid
+            cursor.execute("""
+                SELECT s.uuid FROM messages m
+                JOIN sessions s ON m.session_id = s.id
+                WHERE m.uuid = ?
+            """, (parent_uuid,))
+            row = cursor.fetchone()
 
-            if prev_row:
-                cleared_from = _row_to_entry(prev_row)
+            if row:
+                prev_session_uuid = row[0]
+                cursor.execute(_SESSION_BY_UUID_QUERY, (project_id, prev_session_uuid))
+                prev_row = cursor.fetchone()
 
-                if cleared_from["exchange_count"] > 0:
-                    filtered = [cleared_from]
+                if prev_row:
+                    cleared_from = _row_to_entry(prev_row)
 
-                    # If cleared-from is not substantive, add supplementary
-                    if cleared_from["exchange_count"] <= 2 and max_sessions > 1:
-                        supplementary = _find_first_substantive(cursor, project_id, prev_session_id)
-                        if supplementary:
-                            filtered.append(supplementary)
+                    if cleared_from["exchange_count"] > 0:
+                        filtered = [cleared_from]
 
-                    _load_messages_for(cursor, filtered)
-                    return _finalize(filtered)
+                        # If cleared-from is not substantive, add supplementary
+                        if cleared_from["exchange_count"] <= 2 and max_sessions > 1:
+                            supplementary = _find_first_substantive(cursor, project_id, prev_session_uuid)
+                            if supplementary:
+                                filtered.append(supplementary)
 
-        # No valid handoff or session not in DB — fall through to startup logic
+                        _load_messages_for(cursor, filtered)
+                        return _finalize(filtered)
+
+        # parentUuid not found or session not in DB — fall through to startup logic
 
     # --- Startup path (also fallback for clear with no handoff) ---
     cursor.execute(_CANDIDATE_QUERY, (project_id, current_session_id))
@@ -451,7 +473,7 @@ def main():
         conn = get_db_connection(settings)
         project_key = get_project_key(cwd)
         max_sessions = settings.get("max_context_sessions", 2)
-        sessions = select_sessions(conn, project_key, session_id, max_sessions, source=source, db_path=db_path, cwd=cwd)
+        sessions = select_sessions(conn, project_key, session_id, max_sessions, source=source, cwd=cwd)
         conn.close()
 
         if not sessions:

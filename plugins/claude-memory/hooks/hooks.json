@@ -29,16 +29,6 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run.sh\" clear-handoff.py"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "*",
