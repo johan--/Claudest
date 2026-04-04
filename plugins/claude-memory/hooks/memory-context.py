@@ -7,9 +7,10 @@ Selection Algorithm (startup):
   plus recent short sessions (2 exchanges) in remaining slots.
 
 Selection Algorithm (clear):
-  Force-select current session (if >1 exchange) + always include the most
-  recent substantive session from other sessions. Falls through to startup
-  logic if current session is noise (≤1 exchange).
+  Read handoff file written by SessionEnd hook to hard-link to the exact
+  cleared-from session. If not substantive (≤2 exchanges), append most
+  recent substantive as supplementary. Falls through to startup logic
+  if handoff file is missing, stale, or session not in DB.
 
 Output: JSON with hookSpecificOutput for context injection
 """
@@ -19,6 +20,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Add path to shared utils
@@ -121,9 +123,9 @@ def _find_cleared_from_session_uuid(db_path: Path, cwd: str) -> str | None:
     """
     Read and consume the clear-handoff.json file written by the SessionEnd hook.
     Returns the previous session_id if valid (recent, same cwd), otherwise None.
-    Deletes the file only after validation passes (not on cwd mismatch).
+    Deletes on: valid consumption, stale timestamp, corrupt JSON.
+    Preserves on: cwd mismatch (another session may claim it).
     """
-    from datetime import datetime, timezone
 
     handoff_path = db_path.parent / "clear-handoff.json"
     if not handoff_path.exists():
