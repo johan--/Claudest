@@ -119,23 +119,18 @@ def _finalize(entries: list[dict]) -> list[dict]:
 
 def _find_cleared_from_session_uuid(db_path: Path, cwd: str) -> str | None:
     """
-    Read the clear-handoff.json file written by the SessionEnd hook.
+    Read and consume the clear-handoff.json file written by the SessionEnd hook.
     Returns the previous session_id if valid (recent, same cwd), otherwise None.
-    Deletes the file only after validation passes (not on mismatch).
-    DEBUG: file is not deleted on success to allow inspection.
+    Deletes the file only after validation passes (not on cwd mismatch).
     """
     from datetime import datetime, timezone
-    import logging
-    _log = logging.getLogger(__name__)
 
     handoff_path = db_path.parent / "clear-handoff.json"
     if not handoff_path.exists():
-        _log.info("clear-handoff.json not found")
         return None
     try:
         data = json.loads(handoff_path.read_text())
     except (OSError, json.JSONDecodeError):
-        _log.info("clear-handoff.json corrupt — deleting")
         try:
             handoff_path.unlink()
         except OSError:
@@ -146,11 +141,8 @@ def _find_cleared_from_session_uuid(db_path: Path, cwd: str) -> str | None:
     handoff_cwd = data.get("cwd")
     timestamp_str = data.get("timestamp")
 
-    _log.info(f"clear-handoff read: session={session_id} handoff_cwd={handoff_cwd} our_cwd={cwd}")
-
     # Validate before consuming: wrong cwd means this handoff belongs to another session
     if not session_id or handoff_cwd != cwd:
-        _log.info(f"clear-handoff cwd mismatch or missing session_id — leaving file intact")
         return None
 
     # Stale guard: reject handoffs older than 30 seconds
@@ -158,9 +150,7 @@ def _find_cleared_from_session_uuid(db_path: Path, cwd: str) -> str | None:
         try:
             written = datetime.fromisoformat(timestamp_str)
             age = (datetime.now(timezone.utc) - written).total_seconds()
-            _log.info(f"clear-handoff age={age:.1f}s")
             if age > 30:
-                _log.info("clear-handoff stale — ignoring")
                 return None
         except Exception:
             pass
@@ -171,7 +161,6 @@ def _find_cleared_from_session_uuid(db_path: Path, cwd: str) -> str | None:
     except OSError:
         pass
 
-    _log.info(f"clear-handoff valid — using session={session_id}")
     return session_id
 
 

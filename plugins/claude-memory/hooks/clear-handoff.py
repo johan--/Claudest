@@ -13,17 +13,6 @@ sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "recall-conversations" / "
 
 from memory_lib.db import get_db_path, load_settings
 
-LOG_PATH = Path.home() / ".claude-memory" / "clear-handoff.log"
-
-
-def _log(msg: str) -> None:
-    ts = datetime.now(timezone.utc).isoformat()
-    try:
-        with LOG_PATH.open("a") as f:
-            f.write(f"[{ts}] {msg}\n")
-    except OSError:
-        pass
-
 
 def main():
     raw = sys.stdin.read()
@@ -34,8 +23,6 @@ def main():
 
     session_id = hook_input.get("session_id")
     cwd = hook_input.get("cwd")
-    _log(f"fired. session={session_id} cwd={cwd}")
-
     if not session_id or not cwd:
         return
 
@@ -48,7 +35,6 @@ def main():
         "cwd": cwd,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }))
-    _log(f"handoff written. session={session_id}")
 
 
 if __name__ == "__main__":
