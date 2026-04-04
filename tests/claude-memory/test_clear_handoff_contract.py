@@ -98,6 +98,16 @@ class TestClearHandoffWriter:
         hp = _run_handoff_main(tmp_path, {"end_reason": "clear", "session_id": "abc-123"})
         assert not hp.exists()
 
+    @pytest.mark.parametrize("end_reason", ["interrupt", "crash", "CLEAR", None])
+    def test_does_not_write_for_other_reasons(self, tmp_path, end_reason):
+        """Contract 1: only end_reason='clear' (exact, case-sensitive) triggers write."""
+        hp = _run_handoff_main(tmp_path, {
+            "end_reason": end_reason,
+            "session_id": "abc-123",
+            "cwd": "/some/project",
+        })
+        assert not hp.exists(), f"Should not write for end_reason={end_reason!r}"
+
     def test_does_not_write_on_invalid_json(self, tmp_path):
         """Gracefully ignores malformed stdin."""
         import io

@@ -21,6 +21,9 @@ def main():
     except (json.JSONDecodeError, EOFError):
         return
 
+    if hook_input.get("end_reason") != "clear":
+        return
+
     session_id = hook_input.get("session_id")
     cwd = hook_input.get("cwd")
     if not session_id or not cwd:
