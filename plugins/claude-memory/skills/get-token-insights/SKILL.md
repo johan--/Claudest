@@ -1,7 +1,6 @@
 ---
 name: get-token-insights
-description: >
-  Ingest Claude Code usage data and surface token cost, cache, and workflow patterns.
+description: To analyze Claude token usage, see how you are spending on Claude, understand cache hit rates, review Claude Code workflow patterns, or get cost optimization recommendations.
 allowed-tools:
   - Bash(python3:*)
   - Bash(open:*)
@@ -25,7 +24,9 @@ If the script exits non-zero, report the error and stop.
 
 ## Step 1.5: Claude Code Feature Enrichment
 
-Take the top 3 insights from the JSON output and spawn a `claude-code-guide` agent asking it to suggest Claude Code features, settings, or workflow changes that address those patterns. Use `subagent_type: "claude-code-guide"`. Weave its suggestions into the analysis in Step 2.
+After parsing the JSON stdout from Step 1, construct a personalized prompt for a `claude-code-guide` agent using the actual data — not generic descriptions. For each of the top 3 insights (by `waste_usd`), include verbatim: the `finding` text, `root_cause` text, `waste_usd` value, `solution.action`, and `solution.detail`. Also include the specific project names, counts, and numbers mentioned in the insight (e.g. "meta-ads-cli: 75 cliffs across 53 sessions") so the agent's response is grounded in the user's real usage patterns.
+
+Spawn the agent with `subagent_type: "claude-code-guide"` in **foreground** (do not use `run_in_background`). Wait for the agent to return before proceeding to Step 2. Weave its suggestions into the analysis in Step 2.
 
 ## Step 2: Analyze
 
@@ -33,10 +34,10 @@ Capture the JSON stdout from Step 1 as the analysis input. Structure the analysi
 
 ### Part A: Cost-Optimization Consultant
 
-#### Top-Line Summary
+### Top-Line Summary
 State the total spend, session count, date range, and average cost per session in one paragraph.
 
-#### Priority Insights (top 3 by dollar waste)
+### Priority Insights (top 3 by dollar waste)
 For each insight from the `insights` array (sorted by waste_usd):
 1. State the finding and its dollar impact
 2. Explain the root cause so the user understands *why* this is happening
@@ -44,21 +45,21 @@ For each insight from the `insights` array (sorted by waste_usd):
 4. State the estimated savings
 5. Include any relevant Claude Code feature suggestions from Step 1.5
 
-#### Model Economics
+### Model Economics
 Compare cost across models. If one model dominates spend, call it out and estimate savings from switching routine tasks to a cheaper model.
 
-#### Project Cost Ranking
+### Project Cost Ranking
 List top 3 projects by dollar spend. For the most expensive project, identify what drives the cost.
 
 ### Part B: Workflow Analytics
 
-#### Skill Usage
+### Skill Usage
 Summarize which skills are invoked most, error rates per skill, and any skills that appear underused relative to the user's workflow.
 
-#### Agent Delegation Patterns
+### Agent Delegation Patterns
 Show which subagent types are spawned, how often, and whether model overrides are being used. Flag if `subagent_type` is frequently omitted (defaults to general-purpose when Explore would suffice).
 
-#### Hook Performance
+### Hook Performance
 Identify the slowest hooks by total runtime and average latency. Flag any hooks with high error rates.
 
 Present the full analysis as markdown with the sections above. Ask the user if they want to dive deeper into any specific project, skill, or insight.

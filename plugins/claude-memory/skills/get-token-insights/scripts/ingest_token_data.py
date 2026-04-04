@@ -26,7 +26,33 @@ DASHBOARD_OUT_PATH = DB_PATH.parent / "dashboard.html"
 BATCH_SIZE = 50
 PROGRESS_INTERVAL = 100
 COMMAND_TRUNCATE = 200
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+
+# SQL fragment: true Bash antipatterns — standalone cat/grep/find/ls that have
+# a dedicated tool equivalent. Excludes legitimate patterns:
+#   - cat <<EOF / cat > file  (heredoc/write — no Write-tool equivalent via stdin)
+#   - cat file | ...          (pipe feeder — intent is the downstream command)
+#   - ls -l / ls -la / ls -lt (stat/time-sort — Glob can't do this)
+#   - ls ... 2>/dev/null      (existence check — conditional shell pattern)
+#   - ls ... || / ls ... &&   (conditional existence — shell idiom)
+#   - head/tail ... | ...     (pipe terminator — legit pipeline use)
+_BASH_ANTIPATTERN_PREDICATE = """
+    tc.tool_name = 'Bash' AND (
+        tc.command LIKE 'cat %' OR tc.command LIKE 'head %' OR
+        tc.command LIKE 'tail %' OR tc.command LIKE 'grep %' OR
+        tc.command LIKE 'find %' OR tc.command LIKE 'ls %'
+    )
+    AND tc.command NOT LIKE 'cat <<%'
+    AND tc.command NOT LIKE 'cat >%'
+    AND tc.command NOT LIKE 'cat % | %'
+    AND tc.command NOT LIKE 'ls -l%'
+    AND tc.command NOT LIKE 'ls -[Ralt]%'
+    AND tc.command NOT LIKE 'ls %2>/dev/null%'
+    AND tc.command NOT LIKE 'ls %||%'
+    AND tc.command NOT LIKE 'ls %&&%'
+    AND tc.command NOT LIKE 'head % | %'
+    AND tc.command NOT LIKE 'tail % | %'
+""".strip()
 
 # ── Pricing (USD per million tokens) ─────────────────────────────────
 # Source: https://docs.anthropic.com/en/docs/about-claude/pricing
@@ -482,7 +508,17 @@ def parse_session(filepath: Path, jnl: JnlFile) -> ParsedSession | None:
 
                     # Extract workflow-specific metadata
                     if tc.tool_name == "Skill":
-                        tc.skill_name = inp.get("skill") or None
+                        raw_skill = inp.get("skill") or None
+                        # Normalize: strip "claude-<plugin>:" prefix so
+                        # "claude-memory:recall-conversations" and "recall-conversations"
+                        # count as the same skill. Guard: only strip when prefix matches
+                        # "claude-*:" to preserve third-party namespaces like
+                        # "visual-explainer:generate-web-diagram".
+                        if raw_skill and ":" in raw_skill:
+                            prefix, _, bare = raw_skill.partition(":")
+                            if prefix.startswith("claude-"):
+                                raw_skill = bare
+                        tc.skill_name = raw_skill
                     elif tc.tool_name == "Agent":
                         session.uses_agent = True
                         tc.subagent_type = inp.get("subagent_type") or None
@@ -978,13 +1014,9 @@ def build_output(conn: sqlite3.Connection) -> dict:
 
     # ── Chart 7: Bash antipattern rate by project (computed at query time) ──
     bash_antipatterns = []
-    for row in cur.execute("""
+    for row in cur.execute(f"""
         SELECT sm.project_path,
-               SUM(CASE WHEN tc.tool_name = 'Bash' AND (
-                   tc.command LIKE 'cat %' OR tc.command LIKE 'head %' OR
-                   tc.command LIKE 'tail %' OR tc.command LIKE 'grep %' OR
-                   tc.command LIKE 'find %' OR tc.command LIKE 'ls %'
-               ) AND tc.command NOT LIKE 'cat <<%' THEN 1 ELSE 0 END) as antipatterns,
+               SUM(CASE WHEN {_BASH_ANTIPATTERN_PREDICATE} THEN 1 ELSE 0 END) as antipatterns,
                SUM(CASE WHEN tc.tool_name = 'Bash' THEN 1 ELSE 0 END) as total_bash
         FROM turn_tool_calls tc
         JOIN session_metrics sm ON tc.session_id = sm.session_id AND sm.is_sidechain = 0
@@ -997,12 +1029,8 @@ def build_output(conn: sqlite3.Connection) -> dict:
             "antipatterns": row[1], "total_bash": row[2],
         })
     # TRUE total across all projects (not capped by chart LIMIT)
-    total_bash_antipatterns = cur.execute("""
-        SELECT SUM(CASE WHEN tc.tool_name = 'Bash' AND (
-            tc.command LIKE 'cat %' OR tc.command LIKE 'head %' OR
-            tc.command LIKE 'tail %' OR tc.command LIKE 'grep %' OR
-            tc.command LIKE 'find %' OR tc.command LIKE 'ls %'
-        ) AND tc.command NOT LIKE 'cat <<%' THEN 1 ELSE 0 END)
+    total_bash_antipatterns = cur.execute(f"""
+        SELECT SUM(CASE WHEN {_BASH_ANTIPATTERN_PREDICATE} THEN 1 ELSE 0 END)
         FROM turn_tool_calls tc
         JOIN session_metrics sm ON tc.session_id = sm.session_id AND sm.is_sidechain = 0
     """).fetchone()[0] or 0
@@ -1210,12 +1238,11 @@ def build_output(conn: sqlite3.Connection) -> dict:
     # ── Chart 17: Skill usage ──
     skill_usage = []
     for row in cur.execute("""
-        SELECT tc.skill_name, COUNT(*) as cnt,
-               SUM(tc.is_error) as errs
-        FROM turn_tool_calls tc
-        JOIN session_metrics sm ON tc.session_id = sm.session_id AND sm.is_sidechain = 0
-        WHERE tc.skill_name IS NOT NULL
-        GROUP BY tc.skill_name
+        SELECT skill_name, COUNT(*) as cnt,
+               SUM(is_error) as errs
+        FROM turn_tool_calls
+        WHERE skill_name IS NOT NULL
+        GROUP BY skill_name
         ORDER BY cnt DESC
     """):
         skill_usage.append({
@@ -1228,7 +1255,6 @@ def build_output(conn: sqlite3.Connection) -> dict:
         SELECT DATE(t.timestamp) as day, tc.skill_name, COUNT(*) as cnt
         FROM turn_tool_calls tc
         JOIN turns t ON tc.turn_id = t.id
-        JOIN session_metrics sm ON tc.session_id = sm.session_id AND sm.is_sidechain = 0
         WHERE tc.skill_name IS NOT NULL
         GROUP BY day, tc.skill_name
         ORDER BY day
@@ -1298,15 +1324,11 @@ def build_output(conn: sqlite3.Connection) -> dict:
 
     # Top antipattern commands (actual command prefixes)
     top_bash_cmds = []
-    for row in cur.execute("""
+    for row in cur.execute(f"""
         SELECT SUBSTR(tc.command, 1, 60) as cmd, COUNT(*) as cnt
         FROM turn_tool_calls tc
         JOIN session_metrics sm ON tc.session_id = sm.session_id AND sm.is_sidechain = 0
-        WHERE tc.tool_name = 'Bash' AND (
-            tc.command LIKE 'cat %' OR tc.command LIKE 'head %' OR
-            tc.command LIKE 'tail %' OR tc.command LIKE 'grep %' OR
-            tc.command LIKE 'find %' OR tc.command LIKE 'ls %'
-        ) AND tc.command NOT LIKE 'cat <<%'
+        WHERE {_BASH_ANTIPATTERN_PREDICATE}
         GROUP BY cmd ORDER BY cnt DESC LIMIT 5
     """):
         top_bash_cmds.append({"command": row[0], "count": row[1]})
@@ -1494,27 +1516,32 @@ def _build_insights(**kw) -> list[dict]:
             "grep": "Grep", "find": "Glob", "ls": "Glob or Bash(ls)",
         }
         suggested_rules = []
+        seen_prefixes = set()
         for cmd in top_cmds[:3]:
             prefix = cmd["command"].split()[0] if cmd.get("command") else ""
             replacement = tool_map.get(prefix)
-            if replacement:
+            if replacement and prefix not in seen_prefixes:
                 suggested_rules.append(f"Use {replacement} instead of `{prefix}` command")
+                seen_prefixes.add(prefix)
 
         insights.append({
             "title": "Bash Antipatterns",
             "severity": _severity(kw["bash_antipatterns"], 0.5, 2.0),
-            "finding": f"{kw['bash_antipatterns']} Bash calls use cat/grep/find/ls instead of dedicated tools.",
-            "root_cause": f"Claude is choosing Bash over dedicated tools. Top projects: {proj_detail}. "
-                          f"Top commands: {cmd_detail}.",
+            "finding": f"{kw['bash_antipatterns']} Bash calls use standalone cat/grep/find/ls where a "
+                       f"dedicated tool (Read, Grep, Glob) exists. Legitimate pipeline feeders, "
+                       f"existence checks, and time-sorted ls are excluded.",
+            "root_cause": f"Claude is choosing Bash for standalone file reads/searches. "
+                          f"Top projects: {proj_detail}. Top commands: {cmd_detail}.",
             "waste_tokens": waste_tok,
             "waste_usd": waste_dollars,
             "solution": {
-                "action": "Add CLAUDE.md rules to enforce tool usage",
-                "detail": "Dedicated tools (Read, Grep, Glob) return structured output that uses fewer "
-                          "tokens than raw shell output. Each antipattern wastes ~200 output tokens on "
-                          "verbose formatting.",
+                "action": "Reinforce CLAUDE.md rule for standalone tool use",
+                "detail": "Dedicated tools return structured output with fewer tokens than raw shell. "
+                          "A blanket PreToolUse enforcement hook would have high false-positive rate — "
+                          "pipelines, existence checks, and stat operations are legitimate Bash uses. "
+                          "CLAUDE.md guidance is sufficient for standalone cases.",
                 "claudemd_rule": "\n".join(suggested_rules) if suggested_rules else
-                                 "Use Read instead of cat/head/tail. Use Grep instead of grep. Use Glob instead of find/ls.",
+                                 "Use Read instead of standalone cat/head/tail. Use Grep instead of standalone grep. Use Glob instead of standalone find/ls.",
                 "estimated_savings_usd": round(waste_dollars * 0.7, 2),
             },
         })

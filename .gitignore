@@ -4,6 +4,9 @@ __pycache__/
 SECURITY_AUDIT.md
 /agents/
 claude-code-analytics.html
+token-analysis-dashboard.html
+context-simulator.html
+.claude/worktrees/
 plugins/*/docs/
 docs/
 .obsidian/

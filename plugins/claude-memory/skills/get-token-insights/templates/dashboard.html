@@ -120,7 +120,7 @@
     .section-header:hover { color: var(--cyan); }
     .section-header .toggle { font-size: 0.8rem; transition: transform 0.2s; }
     .section-header.collapsed .toggle { transform: rotate(-90deg); }
-    .section-body { transition: max-height 0.3s ease; overflow: hidden; }
+    .section-body { max-height: 99999px; overflow: hidden; }
     .section-body.collapsed { max-height: 0 !important; }
 
     /* ── CHART PANELS ──────────────────────────────────── */
@@ -395,19 +395,26 @@
     Claude Code Ecosystem <span class="toggle">&#9660;</span>
   </div>
   <div class="section-body" id="sec-ecosystem">
-    <div class="chart-grid-2">
+    <div class="chart-grid-1">
       <div class="chart-panel">
         <div class="chart-title">17 // Skill Usage</div>
-        <div class="chart-desc">invocations per skill (via Skill tool)</div>
-        <div class="chart-wrap" style="height:300px"><canvas id="chart17"></canvas></div>
+        <div class="chart-desc">invocations per skill (via Skill tool) — normalized across plugin namespaces</div>
+        <div class="chart-wrap" id="chart17-wrap"></div>
       </div>
+    </div>
+    <div class="chart-grid-1">
+      <div class="chart-panel">
+        <div class="chart-title">17b // Skills to Consider Disabling</div>
+        <div class="chart-desc">low-usage skills — candidates to turn off to reduce context load</div>
+        <div id="skill-disable-table"></div>
+      </div>
+    </div>
+    <div class="chart-grid-2">
       <div class="chart-panel">
         <div class="chart-title">18 // Agent Delegation</div>
         <div class="chart-desc">subagent spawns by type</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart18"></canvas></div>
       </div>
-    </div>
-    <div class="chart-grid-1">
       <div class="chart-panel">
         <div class="chart-title">19 // Hook Performance</div>
         <div class="chart-desc">total runtime (ms) per hook command</div>
@@ -502,7 +509,7 @@ function initDashboard(D) {
   initChart07(D); initChart08(D); initChart09(D); initChart10(D); initChart11(D);
   initChart12(D); initChart13(D); initChart14(D);
   initChart15(D); initChart15b(D); initChart16(D);
-  initChart17(D); initChart18(D); initChart19(D);
+  initChart17(D); initSkillDisableTable(D); initChart18(D); initChart19(D);
   buildFindings(D); buildRecommendations(D);
 }
 
@@ -893,28 +900,62 @@ function initChart16(D) {
   });
 }
 
-// ── Chart 17: Skill Usage ──────────────────────────────
+// ── Chart 17: Skill Usage (SVG) ────────────────────────
 function initChart17(D) {
   const data = D.skill_usage || [];
-  if (!data.length) { document.getElementById('chart17').parentElement.innerHTML = '<div class="no-data">no skill invocations recorded</div>'; return; }
-  new Chart(document.getElementById('chart17'), {
-    type: 'bar',
-    data: {
-      labels: data.map(d => d.skill),
-      datasets: [
-        { label: 'Invocations', data: data.map(d => d.count), backgroundColor: 'rgba(0,212,255,0.6)', borderColor: '#00d4ff', borderWidth: 1 },
-        { label: 'Errors', data: data.map(d => d.errors), backgroundColor: 'rgba(255,51,85,0.6)', borderColor: '#ff3355', borderWidth: 1 },
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } },
-      scales: {
-        x: { stacked: true, ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
-        y: { stacked: true, ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
-      }
-    }
+  const wrap = document.getElementById('chart17-wrap');
+  if (!data.length) { wrap.innerHTML = '<div class="no-data">no skill invocations recorded</div>'; return; }
+  const ROW = 22, LABEL_W = 200, BAR_W = 360, PAD_TOP = 24, PAD_BOT = 8;
+  const maxVal = Math.max(...data.map(d => d.count));
+  const H = data.length * ROW + PAD_TOP + PAD_BOT;
+  const W = LABEL_W + BAR_W + 60;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="font-family:'JetBrains Mono',monospace;font-size:10px">`;
+  // legend
+  svg += `<rect x="${LABEL_W}" y="4" width="10" height="10" fill="rgba(0,212,255,0.6)"/>`;
+  svg += `<text x="${LABEL_W+14}" y="13" fill="#545878">Invocations</text>`;
+  svg += `<rect x="${LABEL_W+100}" y="4" width="10" height="10" fill="rgba(255,51,85,0.6)"/>`;
+  svg += `<text x="${LABEL_W+114}" y="13" fill="#545878">Errors</text>`;
+  data.forEach((d, i) => {
+    const y = PAD_TOP + i * ROW;
+    const bw = maxVal > 0 ? (d.count / maxVal) * BAR_W : 0;
+    const ew = maxVal > 0 ? (d.errors / maxVal) * BAR_W : 0;
+    // alternating row bg
+    if (i % 2 === 0) svg += `<rect x="0" y="${y}" width="${W}" height="${ROW}" fill="rgba(255,255,255,0.02)"/>`;
+    // label
+    svg += `<text x="${LABEL_W - 6}" y="${y + ROW*0.65}" fill="#c8c8d4" text-anchor="end">${d.skill}</text>`;
+    // invocation bar
+    svg += `<rect x="${LABEL_W}" y="${y+3}" width="${bw}" height="${ROW-6}" fill="rgba(0,212,255,0.6)"/>`;
+    // error bar overlay
+    if (d.errors > 0) svg += `<rect x="${LABEL_W}" y="${y+3}" width="${ew}" height="${ROW-6}" fill="rgba(255,51,85,0.6)"/>`;
+    // count label
+    svg += `<text x="${LABEL_W + bw + 4}" y="${y + ROW*0.65}" fill="#545878">${d.count}</text>`;
   });
+  svg += '</svg>';
+  wrap.style.height = 'auto';
+  wrap.innerHTML = svg;
+}
+
+// ── Chart 17b: Skills to Disable table ────────────────
+function initSkillDisableTable(D) {
+  const data = (D.skill_usage || []).filter(d => d.count <= 2);
+  const el = document.getElementById('skill-disable-table');
+  if (!el) return;
+  if (!data.length) { el.innerHTML = '<div class="no-data">all skills used 3+ times — no candidates</div>'; return; }
+  const rows = data.map(d => `<tr>
+    <td style="padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#c8c8d4">${d.skill}</td>
+    <td style="padding:4px 10px;text-align:right;color:#545878;font-size:11px">${d.count}x</td>
+    <td style="padding:4px 10px;text-align:right;color:${d.errors > 0 ? '#ff3355' : '#545878'};font-size:11px">${d.errors} err</td>
+    <td style="padding:4px 10px;color:#545878;font-size:11px">${d.errors > 0 ? 'errors on every run — likely broken' : d.count === 0 ? 'never used' : 'low frequency — reduce context load'}</td>
+  </tr>`).join('');
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="padding:4px 10px;text-align:left;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">skill</th>
+      <th style="padding:4px 10px;text-align:right;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">uses</th>
+      <th style="padding:4px 10px;text-align:right;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">errors</th>
+      <th style="padding:4px 10px;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">reason</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 // ── Chart 18: Agent Delegation ─────────────────────────
