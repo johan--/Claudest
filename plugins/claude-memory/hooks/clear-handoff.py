@@ -17,16 +17,28 @@ sys.path.insert(0, str(SCRIPT_DIR.parent / "skills" / "recall-conversations" / "
 from memory_lib.db import get_db_path, load_settings
 
 
-def main():
+def _log(msg: str, db_dir: Path | None = None) -> None:
+    base = db_dir if db_dir else Path.home() / ".claude-memory"
     try:
-        hook_input = json.load(sys.stdin)
+        with open(base / "clear-handoff.log", "a") as f:
+            f.write(f"[{datetime.now(timezone.utc).isoformat()}] {msg}\n")
+    except OSError:
+        pass
+
+
+def main():
+    raw = sys.stdin.read()
+    try:
+        hook_input = json.loads(raw)
     except (json.JSONDecodeError, EOFError):
+        _log(f"JSON parse error. raw={raw[:200]!r}")
         print(json.dumps({"continue": True}))
         return
 
     prompt = hook_input.get("prompt", "")
     session_id = hook_input.get("session_id")
     cwd = hook_input.get("cwd")
+    _log(f"fired. session={session_id} cwd={cwd} prompt={prompt[:80]!r}")
 
     # Detect /clear or /new — prompt may be plain text or XML-wrapped command
     # e.g. "<command-name>/clear</command-name>\n<command-message>clear</command-message>"
@@ -56,8 +68,9 @@ def main():
 
     try:
         handoff_path.write_text(json.dumps(handoff))
-    except OSError:
-        pass
+        _log(f"handoff written. session={session_id}", db_path.parent)
+    except OSError as e:
+        _log(f"handoff write failed: {e}", db_path.parent)
 
     print(json.dumps({"continue": True}))
 
