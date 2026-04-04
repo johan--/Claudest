@@ -252,6 +252,9 @@ def _build_fallback_context(session: dict) -> str:
     branch = session.get("git_branch")
     if branch:
         header += f" (branch: {branch})"
+    uuid = session.get("uuid", "")
+    if uuid:
+        header += f" [{uuid}]"
     lines.append(header + "\n")
 
     # Build exchanges early so we can derive topic/disposition
@@ -371,9 +374,11 @@ def build_origin_block(source: str, sessions: list[dict]) -> str:
     else:
         source_label = "startup (new session)"
 
+    uuid = primary.get("uuid", "")
     lines = [
         "## Session Origin",
         f"- Source: {source_label}",
+        f"- Session: {uuid}",
         f"- Previous session started: {started}",
         f"- Branch: {branch}",
         f"- Exchanges: {exchanges}",
