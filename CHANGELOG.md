@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2026-04-05]
+
+### Added
+- Add `get-token-insights` skill with token analysis pipeline, normalization, and interactive dashboard (claude-memory)
+- Add `get-pr-comments` skill for fetching and organizing PR review feedback with text-output optimization (claude-coding)
+- Add `/clear` handoff system to hard-link cleared sessions in context injection (claude-memory)
+- Add session UUID and session origin marker to injected context for debugging and recall (claude-memory)
+- Add SessionEnd handoff contract tests (claude-memory)
+- Add comprehensive test suite for get-pr-comments (claude-coding)
+
+### Changed
+- Migrate `/clear` handoff from UserPromptSubmit to SessionEnd hook (claude-memory)
+- Normalize worktree paths to base repo for project key (claude-memory)
+- Trim agent descriptions and drop example blocks from skills for token efficiency (claude-skills)
+- Skip claude-review workflow when actor is claude[bot] (CI)
+
+### Fixed
+- Add end_reason guard to clear-handoff.py and restore contract test (claude-memory)
+- Address PR review must-fixes: exception guard, stale unlink, end_reason handling (claude-memory)
+- Remove stale `<example>` instruction from create-agent, tighten CLAUDE.md (claude-skills)
+- Update stale --strict help text, add __future__ annotations (claude-skills)
+- Align agent tooling with no-examples convention (claude-skills)
+
 ## [2026-03-27]
 
 ### Added

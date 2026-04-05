@@ -3,37 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Claude Code // Token Analysis v3</title>
+  <title>Claude Code — Token Insights</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200;12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Karla:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --bg:        #0a0a0f;
-      --bg2:       #0d0d16;
-      --bg3:       #111122;
-      --grid:      #1a1a2e;
-      --border:    #1e1e3a;
-      --text:      #c8ccd8;
-      --text-dim:  #545878;
-      --text-head: #e8ecf4;
+      --bg:        #f6f1eb;
+      --bg2:       #ffffff;
+      --bg3:       #ece5dc;
+      --grid:      #e4ddd4;
+      --border:    #ddd5cb;
+      --text:      #5c534a;
+      --text-dim:  #9e9488;
+      --text-head: #3a322b;
 
-      --cyan:   #00d4ff;
-      --green:  #39ff14;
-      --purple: #bf5fff;
-      --amber:  #ffaa00;
-      --red:    #ff3355;
-      --orange: #ff6b35;
-      --yellow: #ffe135;
-      --blue:   #2979ff;
+      --cyan:   #6b9e8a;
+      --green:  #7ca66e;
+      --purple: #9b7eaa;
+      --amber:  #c9944a;
+      --red:    #c27565;
+      --orange: #cb8858;
+      --yellow: #c4a74e;
+      --blue:   #6889a8;
 
-      --glow-cyan:   0 0 18px rgba(0,212,255,0.55),  0 0 40px rgba(0,212,255,0.22);
-      --glow-green:  0 0 18px rgba(57,255,20,0.5),   0 0 40px rgba(57,255,20,0.18);
-      --glow-purple: 0 0 18px rgba(191,95,255,0.5),  0 0 40px rgba(191,95,255,0.18);
-      --glow-amber:  0 0 18px rgba(255,170,0,0.5),   0 0 40px rgba(255,170,0,0.18);
-      --glow-red:    0 0 18px rgba(255,51,85,0.5),   0 0 40px rgba(255,51,85,0.18);
-      --glow-blue:   0 0 18px rgba(41,121,255,0.55), 0 0 40px rgba(41,121,255,0.22);
+      --glow-cyan:   0 2px 12px rgba(107,158,138,0.15);
+      --glow-green:  0 2px 12px rgba(124,166,110,0.15);
+      --glow-purple: 0 2px 12px rgba(155,126,170,0.15);
+      --glow-amber:  0 2px 12px rgba(201,148,74,0.15);
+      --glow-red:    0 2px 12px rgba(194,117,101,0.15);
+      --glow-blue:   0 2px 12px rgba(104,137,168,0.15);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,67 +42,66 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Karla', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
-      background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px);
     }
 
     /* ── LOAD ERROR ────────────────────────────────────── */
     #load-error {
       display: none; position: fixed; inset: 0; z-index: 9999;
-      background: rgba(10,10,15,0.92);
+      background: rgba(246,241,235,0.95);
       align-items: center; justify-content: center; flex-direction: column; gap: 16px;
     }
     .error-box {
-      border: 1px solid var(--amber); border-radius: 6px;
-      background: rgba(255,170,0,0.06); padding: 32px 40px;
+      border: 1px solid var(--amber); border-radius: 14px;
+      background: rgba(201,148,74,0.06); padding: 32px 40px;
       text-align: center; box-shadow: var(--glow-amber); max-width: 500px;
     }
-    .error-title { font-size: 0.9rem; font-weight: 700; letter-spacing: 0.16em; color: var(--amber); text-transform: uppercase; margin-bottom: 12px; }
-    .error-msg { font-size: 0.74rem; color: var(--text); line-height: 1.7; letter-spacing: 0.06em; }
-    .error-msg code { color: var(--cyan); background: rgba(0,212,255,0.1); padding: 2px 6px; border-radius: 2px; }
+    .error-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1rem; font-weight: 600; color: var(--amber); margin-bottom: 12px; }
+    .error-msg { font-size: 0.85rem; color: var(--text); line-height: 1.7; }
+    .error-msg code { color: var(--cyan); background: rgba(107,158,138,0.12); padding: 2px 8px; border-radius: 6px; font-family: 'Karla', sans-serif; }
 
-    /* ── TICKER ─────────────────────────────────────────── */
+    /* ── TICKER (now a calm static bar) ─────────────────── */
     .ticker-wrap {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 999; height: 28px;
-      background: rgba(0,0,0,0.88); border-bottom: 1px solid var(--cyan);
-      overflow: hidden; display: flex; align-items: center;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999; height: 32px;
+      background: var(--bg3); border-bottom: 1px solid var(--border);
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
     }
-    .ticker-track { display: flex; white-space: nowrap; animation: tickerScroll 28s linear infinite; }
-    .ticker-item { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; color: var(--cyan); padding: 0 3rem; text-shadow: var(--glow-cyan); }
-    .ticker-sep { color: var(--text-dim); font-size: 0.72rem; padding: 0 0.5rem; }
+    .ticker-track { display: flex; white-space: nowrap; gap: 0; }
+    .ticker-item { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; color: var(--text-dim); padding: 0 1.2rem; }
+    .ticker-sep { color: var(--border); font-size: 0.72rem; padding: 0 0.3rem; }
     @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
     /* ── PAGE ───────────────────────────────────────────── */
-    .page { padding: 52px 28px 48px; max-width: 1400px; margin: 0 auto; }
+    .page { padding: 56px 32px 48px; max-width: 1400px; margin: 0 auto; }
 
     /* ── HEADER ─────────────────────────────────────────── */
-    .page-header { padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
-    .page-header .label { font-size: 0.68rem; letter-spacing: 0.22em; color: var(--text-dim); margin-bottom: 6px; }
-    .page-header h1 { font-size: clamp(1.4rem, 3vw, 2.1rem); font-weight: 800; color: var(--text-head); letter-spacing: 0.06em; line-height: 1.1; text-transform: uppercase; }
+    .page-header { padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    .page-header .label { font-size: 0.72rem; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 6px; font-weight: 400; }
+    .page-header h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 700; color: var(--text-head); letter-spacing: -0.01em; line-height: 1.15; }
     .page-header h1 span.accent { color: var(--cyan); }
-    .page-header .subtitle { margin-top: 8px; font-size: 0.78rem; color: var(--text-dim); letter-spacing: 0.1em; }
+    .page-header .subtitle { margin-top: 8px; font-size: 0.82rem; color: var(--text-dim); letter-spacing: 0.02em; }
 
     /* ── STAT CARDS ─────────────────────────────────────── */
     .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
     @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
     .stat-card {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
-      padding: 18px 20px 16px; position: relative; overflow: hidden;
-      transition: transform 0.2s, box-shadow 0.2s; cursor: default;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      padding: 20px 22px 18px; position: relative; overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: default;
     }
-    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-    .stat-card.cyan::before   { background: var(--cyan);   box-shadow: var(--glow-cyan); }
-    .stat-card.green::before  { background: var(--green);  box-shadow: var(--glow-green); }
-    .stat-card.purple::before { background: var(--purple); box-shadow: var(--glow-purple); }
-    .stat-card.amber::before  { background: var(--amber);  box-shadow: var(--glow-amber); }
-    .stat-card.red::before    { background: var(--red);    box-shadow: var(--glow-red); }
-    .stat-card.blue::before   { background: var(--blue);   box-shadow: var(--glow-blue); }
-    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-    .stat-label { font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
-    .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; }
-    .stat-sub { font-size: 0.62rem; color: var(--text-dim); margin-top: 6px; letter-spacing: 0.06em; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+    .stat-card.cyan::before   { background: var(--cyan); }
+    .stat-card.green::before  { background: var(--green); }
+    .stat-card.purple::before { background: var(--purple); }
+    .stat-card.amber::before  { background: var(--amber); }
+    .stat-card.red::before    { background: var(--red); }
+    .stat-card.blue::before   { background: var(--blue); }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(90,80,70,0.1); }
+    .stat-label { font-size: 0.68rem; letter-spacing: 0.04em; color: var(--text-dim); margin-bottom: 8px; font-weight: 500; }
+    .stat-value { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.9rem; font-weight: 700; line-height: 1; }
+    .stat-sub { font-size: 0.68rem; color: var(--text-dim); margin-top: 8px; letter-spacing: 0.02em; }
     .stat-card.cyan .stat-value   { color: var(--cyan); }
     .stat-card.green .stat-value  { color: var(--green); }
     .stat-card.purple .stat-value { color: var(--purple); }
@@ -112,15 +111,16 @@
 
     /* ── SECTION HEADERS ───────────────────────────────── */
     .section-header {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--text-dim); border-bottom: 1px solid var(--border);
-      padding: 0 0 10px; margin: 36px 0 20px; cursor: pointer;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 0.88rem; font-weight: 600; letter-spacing: 0.01em;
+      color: var(--text-head); border-bottom: 1px solid var(--border);
+      padding: 0 0 10px; margin: 40px 0 20px; cursor: pointer;
       display: flex; justify-content: space-between; align-items: center;
     }
     .section-header:hover { color: var(--cyan); }
-    .section-header .toggle { font-size: 0.8rem; transition: transform 0.2s; }
+    .section-header .toggle { font-size: 0.8rem; transition: transform 0.25s ease; color: var(--text-dim); }
     .section-header.collapsed .toggle { transform: rotate(-90deg); }
-    .section-body { max-height: 99999px; overflow: hidden; }
+    .section-body { max-height: 99999px; overflow: hidden; transition: max-height 0.3s ease; }
     .section-body.collapsed { max-height: 0 !important; }
 
     /* ── CHART PANELS ──────────────────────────────────── */
@@ -128,48 +128,89 @@
     .chart-grid-1 { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
     @media (max-width: 900px) { .chart-grid-2 { grid-template-columns: 1fr; } }
     .chart-panel {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
-      padding: 18px 20px 14px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      padding: 20px 22px 16px;
     }
-    .chart-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; color: var(--text-head); text-transform: uppercase; margin-bottom: 4px; }
-    .chart-desc { font-size: 0.62rem; color: var(--text-dim); letter-spacing: 0.06em; margin-bottom: 12px; }
+    .chart-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.82rem; font-weight: 600; letter-spacing: 0.01em; color: var(--text-head); margin-bottom: 4px; }
+    .chart-desc { font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.01em; margin-bottom: 14px; }
     .chart-wrap { position: relative; }
     .legend-row { display: flex; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
-    .legend-chip { font-size: 0.62rem; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }
+    .legend-chip { font-size: 0.68rem; color: var(--text-dim); display: flex; align-items: center; gap: 5px; }
     .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 
     /* ── FINDINGS / RECOMMENDATIONS ────────────────────── */
     .findings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     @media (max-width: 900px) { .findings-grid { grid-template-columns: 1fr; } }
     .finding-card {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
-      padding: 16px 18px; position: relative;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px 20px; position: relative;
     }
-    .finding-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-    .finding-card.critical::before { background: var(--red); box-shadow: var(--glow-red); }
-    .finding-card.warning::before  { background: var(--amber); box-shadow: var(--glow-amber); }
-    .finding-card.info::before     { background: var(--blue); box-shadow: var(--glow-blue); }
-    .finding-severity { font-size: 0.58rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px; }
+    .finding-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+    .finding-card.critical::before { background: var(--red); }
+    .finding-card.warning::before  { background: var(--amber); }
+    .finding-card.info::before     { background: var(--blue); }
+    .finding-severity { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; }
     .finding-card.critical .finding-severity { color: var(--red); }
     .finding-card.warning .finding-severity  { color: var(--amber); }
     .finding-card.info .finding-severity     { color: var(--blue); }
-    .finding-title { font-size: 0.76rem; font-weight: 700; color: var(--text-head); margin-bottom: 6px; }
-    .finding-text { font-size: 0.66rem; color: var(--text); line-height: 1.6; letter-spacing: 0.04em; }
+    .finding-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.84rem; font-weight: 600; color: var(--text-head); margin-bottom: 6px; }
+    .finding-text { font-size: 0.76rem; color: var(--text); line-height: 1.7; }
 
     .rec-card {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
-      padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: flex-start; gap: 12px;
     }
     .rec-priority {
-      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em;
-      padding: 3px 8px; border-radius: 3px; white-space: nowrap; flex-shrink: 0;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em;
+      padding: 4px 10px; border-radius: 8px; white-space: nowrap; flex-shrink: 0;
     }
-    .rec-priority.p0 { background: rgba(255,51,85,0.15); color: var(--red); border: 1px solid rgba(255,51,85,0.3); }
-    .rec-priority.p1 { background: rgba(255,170,0,0.12); color: var(--amber); border: 1px solid rgba(255,170,0,0.3); }
-    .rec-priority.p2 { background: rgba(0,212,255,0.1); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2); }
-    .rec-text { font-size: 0.66rem; color: var(--text); line-height: 1.6; letter-spacing: 0.04em; }
+    .rec-priority.p0 { background: rgba(194,117,101,0.12); color: var(--red); border: 1px solid rgba(194,117,101,0.25); }
+    .rec-priority.p1 { background: rgba(201,148,74,0.1); color: var(--amber); border: 1px solid rgba(201,148,74,0.22); }
+    .rec-priority.p2 { background: rgba(107,158,138,0.1); color: var(--cyan); border: 1px solid rgba(107,158,138,0.2); }
+    .rec-text { font-size: 0.76rem; color: var(--text); line-height: 1.7; }
 
-    .no-data { font-size: 0.66rem; color: var(--text-dim); text-align: center; padding: 40px 0; letter-spacing: 0.08em; }
+    .no-data { font-size: 0.76rem; color: var(--text-dim); text-align: center; padding: 40px 0; }
+
+    /* ── TREND BADGES ──────────────────────────────────── */
+    .trend-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 0.66rem; font-weight: 600; letter-spacing: 0.02em;
+      padding: 2px 8px; border-radius: 8px; margin-left: 6px;
+      vertical-align: middle;
+    }
+    .trend-badge.improved { background: rgba(124,166,110,0.12); color: var(--green); }
+    .trend-badge.regressed { background: rgba(194,117,101,0.12); color: var(--red); }
+    .trend-badge.neutral { background: rgba(158,148,136,0.1); color: var(--text-dim); }
+    .trend-badge .arrow { font-size: 0.72rem; }
+
+    /* ── TRENDS SECTION ────────────────────────────────── */
+    .trends-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .trends-grid { grid-template-columns: 1fr; } }
+    .trend-card {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .trend-card-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--text-head); margin-bottom: 12px; }
+    .trend-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--grid);
+    }
+    .trend-row:last-child { border-bottom: none; }
+    .trend-label { font-size: 0.76rem; color: var(--text); }
+    .trend-values { display: flex; align-items: center; gap: 10px; font-size: 0.76rem; }
+    .trend-prior { color: var(--text-dim); }
+    .trend-current { font-weight: 600; color: var(--text-head); }
+    .trend-list { list-style: none; padding: 0; }
+    .trend-list li {
+      font-size: 0.76rem; color: var(--text); padding: 4px 0;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .trend-list li .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .trend-list li .dot.green { background: var(--green); }
+    .trend-list li .dot.red { background: var(--red); }
+    .trend-list li .dot.blue { background: var(--blue); }
+    .trend-list li .dot.dim { background: var(--text-dim); }
   </style>
 </head>
 <body>
@@ -177,7 +218,7 @@
 <!-- Load Error -->
 <div id="load-error">
   <div class="error-box">
-    <div class="error-title">data not loaded</div>
+    <div class="error-title">Data not loaded</div>
     <div class="error-msg">Run <code>/get-token-insights</code> to generate the dashboard.</div>
   </div>
 </div>
@@ -191,8 +232,8 @@
 <div class="page">
 
   <header class="page-header">
-    <div class="label" id="header-label">// DIAGNOSTIC REPORT</div>
-    <h1>Claude Code <span class="accent">//</span> Token Analysis v3</h1>
+    <div class="label" id="header-label">Token Insights</div>
+    <h1>Claude Code <span class="accent">&mdash;</span> Token Insights</h1>
     <div class="subtitle" id="header-subtitle">loading...</div>
   </header>
 
@@ -243,38 +284,65 @@
     </div>
   </div>
 
+  <!-- ═══════════ SECTION 0: WEEK-ON-WEEK ═══════════ -->
+  <div class="section-header" onclick="toggleSection(this)" id="trends-header" style="display:none">
+    Week-on-Week Trends <span class="toggle">&#9660;</span>
+  </div>
+  <div class="section-body" id="sec-trends" style="display:none">
+    <div class="trends-grid">
+      <div class="trend-card">
+        <div class="trend-card-title">Key Metrics</div>
+        <div id="trend-metrics"></div>
+      </div>
+      <div class="trend-card">
+        <div class="trend-card-title">What Changed</div>
+        <div id="trend-changes"></div>
+      </div>
+    </div>
+    <div class="trends-grid">
+      <div class="trend-card">
+        <div class="trend-card-title">Window Summary</div>
+        <div id="trend-summary"></div>
+      </div>
+      <div class="trend-card">
+        <div class="trend-card-title">Hook Performance Deltas</div>
+        <div id="trend-hooks"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════ SECTION 1: OVERVIEW ═══════════ -->
   <div class="section-header" onclick="toggleSection(this)">
-    Section 1 // Overview <span class="toggle">&#9660;</span>
+    Overview <span class="toggle">&#9660;</span>
   </div>
   <div class="section-body" id="sec-overview">
     <div class="chart-grid-1">
       <div class="chart-panel">
-        <div class="chart-title">01 // Sessions by Day</div>
+        <div class="chart-title">Sessions by Day</div>
         <div class="chart-desc">daily session count with token overlay</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart01"></canvas></div>
       </div>
     </div>
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">02 // Token Composition by Day</div>
+        <div class="chart-title">Token Composition by Day</div>
         <div class="chart-desc">input + output + cache_read + cache_creation (log scale)</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart02"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">03 // Top Tools</div>
+        <div class="chart-title">Top Tools</div>
         <div class="chart-desc">tool call counts across all sessions</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart03"></canvas></div>
       </div>
     </div>
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">04 // Model Cost Split</div>
+        <div class="chart-title">Model Cost Split</div>
         <div class="chart-desc">token consumption by model with dollar cost overlay</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart04"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">04b // Cost by Day</div>
+        <div class="chart-title">Cost by Day</div>
         <div class="chart-desc">estimated API spend per day (USD)</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart04b"></canvas></div>
       </div>
@@ -283,17 +351,17 @@
 
   <!-- ═══════════ SECTION 2: CONTEXT MANAGEMENT ═══════════ -->
   <div class="section-header" onclick="toggleSection(this)">
-    Section 2 // Context Management <span class="toggle">&#9660;</span>
+    Context Management <span class="toggle">&#9660;</span>
   </div>
   <div class="section-body" id="sec-context">
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">05 // Cache Trajectory</div>
+        <div class="chart-title">Cache Trajectory</div>
         <div class="chart-desc">cache_read_ratio per turn for top 5 cache-intensive sessions</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart05"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">06 // Ephemeral Cache Tiers</div>
+        <div class="chart-title">Ephemeral Cache Tiers</div>
         <div class="chart-desc">5-minute vs 1-hour cache tier usage by project</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart06"></canvas></div>
       </div>
@@ -302,36 +370,36 @@
 
   <!-- ═══════════ SECTION 3: TOOL EFFICIENCY ═══════════ -->
   <div class="section-header" onclick="toggleSection(this)">
-    Section 3 // Tool Efficiency <span class="toggle">&#9660;</span>
+    Tool Efficiency <span class="toggle">&#9660;</span>
   </div>
   <div class="section-body" id="sec-tools">
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">07 // Bash Antipatterns</div>
+        <div class="chart-title">Bash Antipatterns</div>
         <div class="chart-desc">cat/grep/find/ls usage by project (should use dedicated tools)</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart07"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">08 // Tool Error Rate</div>
+        <div class="chart-title">Tool Error Rate</div>
         <div class="chart-desc">error rate by tool type</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart08"></canvas></div>
       </div>
     </div>
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">09 // Redundant Read Hotspots</div>
+        <div class="chart-title">Redundant Read Hotspots</div>
         <div class="chart-desc">files read 3+ times in same session</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart09"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">10 // Edit Retry Chains</div>
+        <div class="chart-title">Edit Retry Chains</div>
         <div class="chart-desc">failed edit followed by retry to same file, by project</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart10"></canvas></div>
       </div>
     </div>
     <div class="chart-grid-1">
       <div class="chart-panel">
-        <div class="chart-title">11 // Agent Cost Attribution</div>
+        <div class="chart-title">Agent Cost Attribution</div>
         <div class="chart-desc">billed tokens: parent session vs agent sub-sessions (top projects)</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart11"></canvas></div>
       </div>
@@ -340,24 +408,24 @@
 
   <!-- ═══════════ SECTION 4: BEHAVIORAL PATTERNS ═══════════ -->
   <div class="section-header" onclick="toggleSection(this)">
-    Section 4 // Behavioral Patterns <span class="toggle">&#9660;</span>
+    Behavioral Patterns <span class="toggle">&#9660;</span>
   </div>
   <div class="section-body" id="sec-behavior">
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">12 // Turn Complexity</div>
+        <div class="chart-title">Turn Complexity</div>
         <div class="chart-desc">output tokens per turn (with thinking overlay)</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart12"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">13 // User Response Times</div>
+        <div class="chart-title">User Response Times</div>
         <div class="chart-desc">time between assistant response and next user message</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart13"></canvas></div>
       </div>
     </div>
     <div class="chart-grid-1">
       <div class="chart-panel">
-        <div class="chart-title">14 // Hook Overhead</div>
+        <div class="chart-title">Hook Overhead</div>
         <div class="chart-desc">total hook execution time by project</div>
         <div class="chart-wrap" style="height:280px"><canvas id="chart14"></canvas></div>
       </div>
@@ -366,24 +434,24 @@
 
   <!-- ═══════════ SECTION 5: PROJECT INTELLIGENCE ═══════════ -->
   <div class="section-header" onclick="toggleSection(this)">
-    Section 5 // Project Intelligence <span class="toggle">&#9660;</span>
+    Project Intelligence <span class="toggle">&#9660;</span>
   </div>
   <div class="section-body" id="sec-projects">
     <div class="chart-grid-1">
       <div class="chart-panel">
-        <div class="chart-title">15 // Cost by Project</div>
+        <div class="chart-title">Cost by Project</div>
         <div class="chart-desc">estimated API spend per project (USD)</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart15b"></canvas></div>
       </div>
     </div>
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">15a // Per-Project Token Spend</div>
+        <div class="chart-title">Per-Project Token Spend</div>
         <div class="chart-desc">billed tokens (input + cache_creation) by project</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart15"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">16 // Project Tool Profiles</div>
+        <div class="chart-title">Project Tool Profiles</div>
         <div class="chart-desc">tool usage breakdown for top 5 projects</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart16"></canvas></div>
       </div>
@@ -397,26 +465,26 @@
   <div class="section-body" id="sec-ecosystem">
     <div class="chart-grid-1">
       <div class="chart-panel">
-        <div class="chart-title">17 // Skill Usage</div>
+        <div class="chart-title">Skill Usage</div>
         <div class="chart-desc">invocations per skill (via Skill tool) — normalized across plugin namespaces</div>
         <div class="chart-wrap" id="chart17-wrap"></div>
       </div>
     </div>
     <div class="chart-grid-1">
       <div class="chart-panel">
-        <div class="chart-title">17b // Skills to Consider Disabling</div>
+        <div class="chart-title">Skills to Consider Disabling</div>
         <div class="chart-desc">low-usage skills — candidates to turn off to reduce context load</div>
         <div id="skill-disable-table"></div>
       </div>
     </div>
     <div class="chart-grid-2">
       <div class="chart-panel">
-        <div class="chart-title">18 // Agent Delegation</div>
+        <div class="chart-title">Agent Delegation</div>
         <div class="chart-desc">subagent spawns by type</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart18"></canvas></div>
       </div>
       <div class="chart-panel">
-        <div class="chart-title">19 // Hook Performance</div>
+        <div class="chart-title">Hook Performance</div>
         <div class="chart-desc">total runtime (ms) per hook command</div>
         <div class="chart-wrap" style="height:300px"><canvas id="chart19"></canvas></div>
       </div>
@@ -453,13 +521,13 @@ function fmt(n) {
 }
 function pct(n) { return n == null ? '--' : (n * 100).toFixed(1) + '%'; }
 
-const COLORS = ['#00d4ff', '#39ff14', '#bf5fff', '#ffaa00', '#ff3355', '#ff6b35', '#ffe135', '#2979ff', '#e040fb', '#00e5ff'];
+const COLORS = ['#6b9e8a', '#c9944a', '#9b7eaa', '#6889a8', '#c27565', '#cb8858', '#7ca66e', '#c4a74e', '#8a7e6b', '#a8886b'];
 const chartDefaults = {
   responsive: true, maintainAspectRatio: false,
   plugins: { legend: { display: false } },
   scales: {
-    x: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
-    y: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
+    x: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
+    y: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
   }
 };
 
@@ -473,8 +541,8 @@ function toggleSection(header) {
 function initDashboard(D) {
   // Header
   const dr = D.date_range || {};
-  document.getElementById('header-label').textContent = `// DIAGNOSTIC REPORT — ${dr.earliest || '?'} to ${dr.latest || '?'}`;
-  document.getElementById('header-subtitle').textContent = `${D.total_sessions} sessions analyzed // generated ${(D.generated_at || '').slice(0, 10)}`;
+  document.getElementById('header-label').textContent = `${dr.earliest || '?'} to ${dr.latest || '?'}`;
+  document.getElementById('header-subtitle').textContent = `${D.total_sessions} sessions analyzed · generated ${(D.generated_at || '').slice(0, 10)}`;
 
   // KPIs
   const k = D.kpis || {};
@@ -511,6 +579,7 @@ function initDashboard(D) {
   initChart15(D); initChart15b(D); initChart16(D);
   initChart17(D); initSkillDisableTable(D); initChart18(D); initChart19(D);
   buildFindings(D); buildRecommendations(D);
+  initTrends(D);
 }
 
 // ── Chart 01: Sessions by Day ───────────────────────────
@@ -523,7 +592,7 @@ function initChart01(D) {
       labels: days.map(d => d.date.slice(5)),
       datasets: [{
         label: 'Sessions', data: days.map(d => d.session_count),
-        backgroundColor: 'rgba(0,212,255,0.5)', borderColor: '#00d4ff', borderWidth: 1,
+        backgroundColor: 'rgba(107,158,138,0.45)', borderColor: '#6b9e8a', borderWidth: 1, borderRadius: 6,
       }]
     },
     options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, tooltip: { mode: 'index' } } }
@@ -539,16 +608,16 @@ function initChart02(D) {
     data: {
       labels: days.map(d => d.date.slice(5)),
       datasets: [
-        { label: 'Output', data: days.map(d => d.output_tokens), backgroundColor: 'rgba(57,255,20,0.6)', stack: 's' },
-        { label: 'Input', data: days.map(d => d.input_tokens), backgroundColor: 'rgba(0,212,255,0.4)', stack: 's' },
-        { label: 'Cache Read', data: days.map(d => d.cache_read), backgroundColor: 'rgba(191,95,255,0.4)', stack: 's' },
-        { label: 'Cache Creation', data: days.map(d => d.cache_creation), backgroundColor: 'rgba(255,170,0,0.4)', stack: 's' },
+        { label: 'Output', data: days.map(d => d.output_tokens), backgroundColor: 'rgba(124,166,110,0.55)', stack: 's', borderRadius: 3 },
+        { label: 'Input', data: days.map(d => d.input_tokens), backgroundColor: 'rgba(107,158,138,0.4)', stack: 's', borderRadius: 3 },
+        { label: 'Cache Read', data: days.map(d => d.cache_read), backgroundColor: 'rgba(155,126,170,0.4)', stack: 's', borderRadius: 3 },
+        { label: 'Cache Creation', data: days.map(d => d.cache_creation), backgroundColor: 'rgba(201,148,74,0.4)', stack: 's', borderRadius: 3 },
       ]
     },
     options: {
       ...chartDefaults,
       scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, type: 'logarithmic' } },
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } }
     }
   });
 }
@@ -577,15 +646,15 @@ function initChart04(D) {
     data: {
       labels: models.map(m => cleanLabel(m.model)),
       datasets: [
-        { label: 'Input', data: models.map(m => m.input_tokens), backgroundColor: 'rgba(0,212,255,0.6)', stack: 's' },
-        { label: 'Output (visible)', data: models.map(m => Math.max(0, m.output_tokens - m.thinking_tokens)), backgroundColor: 'rgba(57,255,20,0.6)', stack: 's' },
-        { label: 'Thinking', data: models.map(m => m.thinking_tokens), backgroundColor: 'rgba(191,95,255,0.5)', stack: 's' },
+        { label: 'Input', data: models.map(m => m.input_tokens), backgroundColor: 'rgba(107,158,138,0.5)', stack: 's', borderRadius: 3 },
+        { label: 'Output (visible)', data: models.map(m => Math.max(0, m.output_tokens - m.thinking_tokens)), backgroundColor: 'rgba(124,166,110,0.5)', stack: 's', borderRadius: 3 },
+        { label: 'Thinking', data: models.map(m => m.thinking_tokens), backgroundColor: 'rgba(155,126,170,0.45)', stack: 's', borderRadius: 3 },
       ]
     },
     options: {
       ...chartDefaults,
       plugins: {
-        legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } },
+        legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } },
         tooltip: {
           callbacks: {
             afterTitle: (items) => {
@@ -610,15 +679,15 @@ function initChart04b(D) {
       datasets: [{
         label: 'Daily Spend (USD)',
         data: days.map(d => d.cost_usd),
-        borderColor: '#39ff14', backgroundColor: 'rgba(57,255,20,0.1)',
-        fill: true, tension: 0.3, pointRadius: 3, borderWidth: 2,
+        borderColor: '#7ca66e', backgroundColor: 'rgba(124,166,110,0.08)',
+        fill: true, tension: 0.4, pointRadius: 4, borderWidth: 2, pointBackgroundColor: '#7ca66e',
       }]
     },
     options: {
       ...chartDefaults,
       scales: {
         ...chartDefaults.scales,
-        y: { ...chartDefaults.scales.y, title: { display: true, text: 'USD', color: '#545878' },
+        y: { ...chartDefaults.scales.y, title: { display: true, text: 'USD', color: '#9e9488' },
              ticks: { ...chartDefaults.scales.y.ticks, callback: v => '$' + v.toFixed(2) } },
       },
       plugins: {
@@ -649,8 +718,8 @@ function initChart15b(D) {
         tooltip: { callbacks: { label: ctx => '$' + ctx.parsed.x.toFixed(2) } }
       },
       scales: {
-        x: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 }, callback: v => '$' + v.toFixed(0) }, grid: { color: '#1a1a2e' } },
-        y: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
+        x: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 }, callback: v => '$' + v.toFixed(0) }, grid: { color: '#e4ddd4' } },
+        y: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
       }
     }
   });
@@ -672,10 +741,10 @@ function initChart05(D) {
     options: {
       ...chartDefaults,
       scales: {
-        x: { ...chartDefaults.scales.x, type: 'linear', title: { display: true, text: 'Turn', color: '#545878' } },
-        y: { ...chartDefaults.scales.y, min: 0, max: 100, title: { display: true, text: 'Cache Hit %', color: '#545878' } },
+        x: { ...chartDefaults.scales.x, type: 'linear', title: { display: true, text: 'Turn', color: '#9e9488' } },
+        y: { ...chartDefaults.scales.y, min: 0, max: 100, title: { display: true, text: 'Cache Hit %', color: '#9e9488' } },
       },
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 9 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 10 } } } }
     }
   });
 }
@@ -689,13 +758,13 @@ function initChart06(D) {
     data: {
       labels: data.map(d => d.project),
       datasets: [
-        { label: '5min tier', data: data.map(d => d.ephem_5m), backgroundColor: 'rgba(255,170,0,0.6)', stack: 's' },
-        { label: '1hr tier', data: data.map(d => d.ephem_1h), backgroundColor: 'rgba(0,212,255,0.6)', stack: 's' },
+        { label: '5min tier', data: data.map(d => d.ephem_5m), backgroundColor: 'rgba(201,148,74,0.5)', stack: 's', borderRadius: 3 },
+        { label: '1hr tier', data: data.map(d => d.ephem_1h), backgroundColor: 'rgba(107,158,138,0.5)', stack: 's', borderRadius: 3 },
       ]
     },
     options: {
       ...chartDefaults, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } }
     }
   });
 }
@@ -709,13 +778,13 @@ function initChart07(D) {
     data: {
       labels: data.map(d => d.project),
       datasets: [
-        { label: 'Antipatterns', data: data.map(d => d.antipatterns), backgroundColor: 'rgba(255,51,85,0.6)' },
-        { label: 'Total Bash', data: data.map(d => d.total_bash), backgroundColor: 'rgba(0,212,255,0.2)' },
+        { label: 'Antipatterns', data: data.map(d => d.antipatterns), backgroundColor: 'rgba(194,117,101,0.5)', borderRadius: 3 },
+        { label: 'Total Bash', data: data.map(d => d.total_bash), backgroundColor: 'rgba(107,158,138,0.18)', borderRadius: 3 },
       ]
     },
     options: {
       ...chartDefaults, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } }
     }
   });
 }
@@ -729,13 +798,13 @@ function initChart08(D) {
     data: {
       labels: data.map(d => d.tool),
       datasets: [
-        { label: 'Errors', data: data.map(d => d.errors), backgroundColor: 'rgba(255,51,85,0.6)' },
-        { label: 'Total Calls', data: data.map(d => d.total), backgroundColor: 'rgba(0,212,255,0.15)' },
+        { label: 'Errors', data: data.map(d => d.errors), backgroundColor: 'rgba(194,117,101,0.5)', borderRadius: 3 },
+        { label: 'Total Calls', data: data.map(d => d.total), backgroundColor: 'rgba(107,158,138,0.15)', borderRadius: 3 },
       ]
     },
     options: {
       ...chartDefaults, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } }
     }
   });
 }
@@ -750,7 +819,7 @@ function initChart09(D) {
       labels: data.slice(0, 12).map(d => d.file),
       datasets: [{
         data: data.slice(0, 12).map(d => d.count),
-        backgroundColor: 'rgba(255,170,0,0.6)', borderColor: '#ffaa00', borderWidth: 1,
+        backgroundColor: 'rgba(201,148,74,0.45)', borderColor: '#c9944a', borderWidth: 1, borderRadius: 4,
       }]
     },
     options: { ...chartDefaults, indexAxis: 'y' }
@@ -765,7 +834,7 @@ function initChart10(D) {
     type: 'bar',
     data: {
       labels: data.map(d => d.project),
-      datasets: [{ data: data.map(d => d.retries), backgroundColor: 'rgba(255,107,53,0.6)', borderColor: '#ff6b35', borderWidth: 1 }]
+      datasets: [{ data: data.map(d => d.retries), backgroundColor: 'rgba(203,136,88,0.45)', borderColor: '#cb8858', borderWidth: 1, borderRadius: 4 }]
     },
     options: { ...chartDefaults, indexAxis: 'y' }
   });
@@ -780,13 +849,13 @@ function initChart11(D) {
     data: {
       labels: data.map(d => d.project),
       datasets: [
-        { label: 'Parent Session', data: data.map(d => d.parent_cost), backgroundColor: 'rgba(0,212,255,0.5)', stack: 's' },
-        { label: 'Agent Sub-sessions', data: data.map(d => d.agent_cost), backgroundColor: 'rgba(191,95,255,0.5)', stack: 's' },
+        { label: 'Parent Session', data: data.map(d => d.parent_cost), backgroundColor: 'rgba(107,158,138,0.45)', stack: 's', borderRadius: 3 },
+        { label: 'Agent Sub-sessions', data: data.map(d => d.agent_cost), backgroundColor: 'rgba(155,126,170,0.45)', stack: 's', borderRadius: 3 },
       ]
     },
     options: {
       ...chartDefaults, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } }
     }
   });
 }
@@ -802,13 +871,13 @@ function initChart12(D) {
     data: {
       labels,
       datasets: [
-        { label: 'Turns', data: keys.map(k => tc[k] || 0), backgroundColor: 'rgba(0,212,255,0.5)' },
-        { label: 'Avg Thinking/Turn', data: keys.map(k => th[k] || 0), backgroundColor: 'rgba(191,95,255,0.4)' },
+        { label: 'Turns', data: keys.map(k => tc[k] || 0), backgroundColor: 'rgba(107,158,138,0.45)', borderRadius: 4 },
+        { label: 'Avg Thinking/Turn', data: keys.map(k => th[k] || 0), backgroundColor: 'rgba(155,126,170,0.38)', borderRadius: 4 },
       ]
     },
     options: {
       ...chartDefaults,
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } }
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } }
     }
   });
 }
@@ -818,7 +887,7 @@ function initChart13(D) {
   const rt = D.response_time_dist || {};
   const labels = ['<30s', '30s-2m', '2-5m', '5-15m', '15m+'];
   const keys = ['under_30s', '30s_2m', '2m_5m', '5m_15m', 'over_15m'];
-  const colors = ['#39ff14', '#00d4ff', '#ffaa00', '#ff6b35', '#ff3355'];
+  const colors = ['#7ca66e', '#6b9e8a', '#c9944a', '#cb8858', '#c27565'];
   new Chart(document.getElementById('chart13'), {
     type: 'bar',
     data: {
@@ -839,15 +908,15 @@ function initChart14(D) {
       labels: data.map(d => d.project),
       datasets: [{
         data: data.map(d => Math.round(d.hook_ms / 1000)),
-        backgroundColor: 'rgba(255,225,53,0.5)', borderColor: '#ffe135', borderWidth: 1,
+        backgroundColor: 'rgba(196,167,78,0.4)', borderColor: '#c4a74e', borderWidth: 1, borderRadius: 4,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: 'y',
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' }, title: { display: true, text: 'seconds', color: '#545878' } },
-        y: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
+        x: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' }, title: { display: true, text: 'seconds', color: '#9e9488' } },
+        y: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
       }
     }
   });
@@ -862,16 +931,16 @@ function initChart15(D) {
     data: {
       labels: data.map(d => d.project),
       datasets: [
-        { label: 'Input', data: data.map(d => d.input_tokens), backgroundColor: 'rgba(0,212,255,0.5)', stack: 's' },
-        { label: 'Cache Creation', data: data.map(d => d.cache_creation), backgroundColor: 'rgba(255,170,0,0.5)', stack: 's' },
+        { label: 'Input', data: data.map(d => d.input_tokens), backgroundColor: 'rgba(107,158,138,0.45)', stack: 's', borderRadius: 3 },
+        { label: 'Cache Creation', data: data.map(d => d.cache_creation), backgroundColor: 'rgba(201,148,74,0.4)', stack: 's', borderRadius: 3 },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } },
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } },
       scales: {
-        x: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' }, stacked: true },
-        y: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' }, stacked: true },
+        x: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' }, stacked: true },
+        y: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' }, stacked: true },
       }
     }
   });
@@ -895,7 +964,7 @@ function initChart16(D) {
     data: { labels: data.map(p => p.project), datasets },
     options: {
       ...chartDefaults,
-      plugins: { legend: { display: true, position: 'bottom', labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 9 } } } }
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: '#9e9488', font: { family: 'Karla', size: 10 } } } }
     }
   });
 }
@@ -909,26 +978,26 @@ function initChart17(D) {
   const maxVal = Math.max(...data.map(d => d.count));
   const H = data.length * ROW + PAD_TOP + PAD_BOT;
   const W = LABEL_W + BAR_W + 60;
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="font-family:'JetBrains Mono',monospace;font-size:10px">`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" style="font-family:'Karla',sans-serif;font-size:11px">`;
   // legend
-  svg += `<rect x="${LABEL_W}" y="4" width="10" height="10" fill="rgba(0,212,255,0.6)"/>`;
-  svg += `<text x="${LABEL_W+14}" y="13" fill="#545878">Invocations</text>`;
-  svg += `<rect x="${LABEL_W+100}" y="4" width="10" height="10" fill="rgba(255,51,85,0.6)"/>`;
-  svg += `<text x="${LABEL_W+114}" y="13" fill="#545878">Errors</text>`;
+  svg += `<rect x="${LABEL_W}" y="4" width="10" height="10" rx="3" fill="rgba(107,158,138,0.5)"/>`;
+  svg += `<text x="${LABEL_W+14}" y="13" fill="#9e9488">Invocations</text>`;
+  svg += `<rect x="${LABEL_W+100}" y="4" width="10" height="10" rx="3" fill="rgba(194,117,101,0.5)"/>`;
+  svg += `<text x="${LABEL_W+114}" y="13" fill="#9e9488">Errors</text>`;
   data.forEach((d, i) => {
     const y = PAD_TOP + i * ROW;
     const bw = maxVal > 0 ? (d.count / maxVal) * BAR_W : 0;
     const ew = maxVal > 0 ? (d.errors / maxVal) * BAR_W : 0;
     // alternating row bg
-    if (i % 2 === 0) svg += `<rect x="0" y="${y}" width="${W}" height="${ROW}" fill="rgba(255,255,255,0.02)"/>`;
+    if (i % 2 === 0) svg += `<rect x="0" y="${y}" width="${W}" height="${ROW}" fill="rgba(0,0,0,0.02)"/>`;
     // label
-    svg += `<text x="${LABEL_W - 6}" y="${y + ROW*0.65}" fill="#c8c8d4" text-anchor="end">${d.skill}</text>`;
+    svg += `<text x="${LABEL_W - 6}" y="${y + ROW*0.65}" fill="#5c534a" text-anchor="end">${d.skill}</text>`;
     // invocation bar
-    svg += `<rect x="${LABEL_W}" y="${y+3}" width="${bw}" height="${ROW-6}" fill="rgba(0,212,255,0.6)"/>`;
+    svg += `<rect x="${LABEL_W}" y="${y+3}" width="${bw}" height="${ROW-6}" rx="3" fill="rgba(107,158,138,0.5)"/>`;
     // error bar overlay
-    if (d.errors > 0) svg += `<rect x="${LABEL_W}" y="${y+3}" width="${ew}" height="${ROW-6}" fill="rgba(255,51,85,0.6)"/>`;
+    if (d.errors > 0) svg += `<rect x="${LABEL_W}" y="${y+3}" width="${ew}" height="${ROW-6}" rx="3" fill="rgba(194,117,101,0.5)"/>`;
     // count label
-    svg += `<text x="${LABEL_W + bw + 4}" y="${y + ROW*0.65}" fill="#545878">${d.count}</text>`;
+    svg += `<text x="${LABEL_W + bw + 4}" y="${y + ROW*0.65}" fill="#9e9488">${d.count}</text>`;
   });
   svg += '</svg>';
   wrap.style.height = 'auto';
@@ -942,17 +1011,17 @@ function initSkillDisableTable(D) {
   if (!el) return;
   if (!data.length) { el.innerHTML = '<div class="no-data">all skills used 3+ times — no candidates</div>'; return; }
   const rows = data.map(d => `<tr>
-    <td style="padding:4px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#c8c8d4">${d.skill}</td>
-    <td style="padding:4px 10px;text-align:right;color:#545878;font-size:11px">${d.count}x</td>
-    <td style="padding:4px 10px;text-align:right;color:${d.errors > 0 ? '#ff3355' : '#545878'};font-size:11px">${d.errors} err</td>
-    <td style="padding:4px 10px;color:#545878;font-size:11px">${d.errors > 0 ? 'errors on every run — likely broken' : d.count === 0 ? 'never used' : 'low frequency — reduce context load'}</td>
+    <td style="padding:6px 12px;font-family:'Karla',sans-serif;font-size:12px;color:#5c534a">${d.skill}</td>
+    <td style="padding:6px 12px;text-align:right;color:#9e9488;font-size:12px">${d.count}x</td>
+    <td style="padding:6px 12px;text-align:right;color:${d.errors > 0 ? '#c27565' : '#9e9488'};font-size:12px">${d.errors} err</td>
+    <td style="padding:6px 12px;color:#9e9488;font-size:12px">${d.errors > 0 ? 'errors on every run — likely broken' : d.count === 0 ? 'never used' : 'low frequency — reduce context load'}</td>
   </tr>`).join('');
   el.innerHTML = `<table style="width:100%;border-collapse:collapse">
     <thead><tr>
-      <th style="padding:4px 10px;text-align:left;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">skill</th>
-      <th style="padding:4px 10px;text-align:right;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">uses</th>
-      <th style="padding:4px 10px;text-align:right;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">errors</th>
-      <th style="padding:4px 10px;color:#545878;font-size:10px;border-bottom:1px solid #1a1a2e">reason</th>
+      <th style="padding:6px 12px;text-align:left;color:#9e9488;font-size:11px;border-bottom:1px solid #ddd5cb;font-weight:500">skill</th>
+      <th style="padding:6px 12px;text-align:right;color:#9e9488;font-size:11px;border-bottom:1px solid #ddd5cb;font-weight:500">uses</th>
+      <th style="padding:6px 12px;text-align:right;color:#9e9488;font-size:11px;border-bottom:1px solid #ddd5cb;font-weight:500">errors</th>
+      <th style="padding:6px 12px;color:#9e9488;font-size:11px;border-bottom:1px solid #ddd5cb;font-weight:500">reason</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -967,16 +1036,16 @@ function initChart18(D) {
     data: {
       labels: data.map(d => d.subagent_type),
       datasets: [
-        { label: 'Spawns', data: data.map(d => d.count), backgroundColor: 'rgba(191,95,255,0.6)', borderColor: '#bf5fff', borderWidth: 1 },
-        { label: 'Errors', data: data.map(d => d.errors), backgroundColor: 'rgba(255,51,85,0.6)', borderColor: '#ff3355', borderWidth: 1 },
+        { label: 'Spawns', data: data.map(d => d.count), backgroundColor: 'rgba(155,126,170,0.5)', borderColor: '#9b7eaa', borderWidth: 1, borderRadius: 3 },
+        { label: 'Errors', data: data.map(d => d.errors), backgroundColor: 'rgba(194,117,101,0.5)', borderColor: '#c27565', borderWidth: 1, borderRadius: 3 },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-      plugins: { legend: { display: true, labels: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } } } },
+      plugins: { legend: { display: true, labels: { color: '#9e9488', font: { family: 'Karla', size: 11 } } } },
       scales: {
-        x: { stacked: true, ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
-        y: { stacked: true, ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
+        x: { stacked: true, ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
+        y: { stacked: true, ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
       }
     }
   });
@@ -997,7 +1066,7 @@ function initChart19(D) {
       labels: labels,
       datasets: [{
         label: 'Total ms', data: data.map(d => d.total_ms),
-        backgroundColor: 'rgba(255,170,0,0.6)', borderColor: '#ffaa00', borderWidth: 1,
+        backgroundColor: 'rgba(201,148,74,0.45)', borderColor: '#c9944a', borderWidth: 1, borderRadius: 4,
       }]
     },
     options: {
@@ -1014,8 +1083,8 @@ function initChart19(D) {
         }
       },
       scales: {
-        x: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
-        y: { ticks: { color: '#545878', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1a1a2e' } },
+        x: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
+        y: { ticks: { color: '#9e9488', font: { family: 'Karla', size: 11 } }, grid: { color: '#e4ddd4' } },
       }
     }
   });
@@ -1046,6 +1115,168 @@ function buildRecommendations(D) {
       <span class="rec-text">${r.text}</span>
     </div>
   `).join('');
+}
+
+// ── Trends ─────────────────────────────────────────────
+function initTrends(D) {
+  const T = D.trends;
+  if (!T || !T.current_window) return;
+
+  // Show the section
+  document.getElementById('trends-header').style.display = '';
+  document.getElementById('sec-trends').style.display = '';
+
+  // Helper: build trend badge HTML
+  function badge(changePct, lowerIsBetter) {
+    if (changePct == null) return '<span class="trend-badge neutral">new</span>';
+    if (Math.abs(changePct) < 5) return '<span class="trend-badge neutral">~0%</span>';
+    const gotBetter = lowerIsBetter ? changePct < 0 : changePct > 0;
+    const cls = gotBetter ? 'improved' : 'regressed';
+    // For "lower is better" metrics, down arrow = good. For "higher is better", up = good.
+    const displayArrow = changePct < 0 ? '&#9660;' : '&#9650;';
+    return `<span class="trend-badge ${cls}"><span class="arrow">${displayArrow}</span>${Math.abs(changePct).toFixed(1)}%</span>`;
+  }
+
+  // Key metrics table
+  const metricsMeta = {
+    cost_per_session: { fmt: v => '$' + (v || 0).toFixed(2), lower: true },
+    cache_ratio: { fmt: v => (v * 100).toFixed(1) + '%', lower: false },
+    cliffs_per_session: { fmt: v => v.toFixed(2), lower: true },
+    antipatterns_per_session: { fmt: v => v.toFixed(2), lower: true },
+    tool_error_rate: { fmt: v => (v * 100).toFixed(2) + '%', lower: true },
+    hook_avg_ms: { fmt: v => Math.round(v) + 'ms', lower: true },
+  };
+  const metricsEl = document.getElementById('trend-metrics');
+  let metricsHTML = '';
+  for (const [key, meta] of Object.entries(metricsMeta)) {
+    const m = (T.metrics || {})[key];
+    if (!m) continue;
+    metricsHTML += `<div class="trend-row">
+      <span class="trend-label">${m.label}</span>
+      <span class="trend-values">
+        <span class="trend-prior">${m.prior != null ? meta.fmt(m.prior) : '—'}</span>
+        <span>→</span>
+        <span class="trend-current">${meta.fmt(m.current)}</span>
+        ${badge(m.change_pct, meta.lower)}
+      </span>
+    </div>`;
+  }
+  metricsEl.innerHTML = metricsHTML || '<div class="no-data">no comparison data</div>';
+
+  // What Changed lists
+  const changesEl = document.getElementById('trend-changes');
+  let changesHTML = '';
+  if (T.improved && T.improved.length) {
+    changesHTML += '<div style="margin-bottom:10px;font-size:0.72rem;font-weight:600;color:var(--green)">Improved</div>';
+    changesHTML += '<ul class="trend-list">' + T.improved.map(i => `<li><span class="dot green"></span>${i}</li>`).join('') + '</ul>';
+  }
+  if (T.regressed && T.regressed.length) {
+    changesHTML += '<div style="margin-bottom:10px;margin-top:12px;font-size:0.72rem;font-weight:600;color:var(--red)">Regressed</div>';
+    changesHTML += '<ul class="trend-list">' + T.regressed.map(i => `<li><span class="dot red"></span>${i}</li>`).join('') + '</ul>';
+  }
+  if (T.new_skills && T.new_skills.length) {
+    changesHTML += '<div style="margin-bottom:10px;margin-top:12px;font-size:0.72rem;font-weight:600;color:var(--blue)">New Skills</div>';
+    changesHTML += '<ul class="trend-list">' + T.new_skills.map(s => `<li><span class="dot blue"></span>${s}</li>`).join('') + '</ul>';
+  }
+  if (T.retired_skills && T.retired_skills.length) {
+    changesHTML += '<div style="margin-bottom:10px;margin-top:12px;font-size:0.72rem;font-weight:600;color:var(--text-dim)">Retired Skills</div>';
+    changesHTML += '<ul class="trend-list">' + T.retired_skills.map(s => `<li><span class="dot dim"></span>${s}</li>`).join('') + '</ul>';
+  }
+  if (!changesHTML) changesHTML = '<div class="no-data">no changes detected</div>';
+  changesEl.innerHTML = changesHTML;
+
+  // Window summary
+  const summaryEl = document.getElementById('trend-summary');
+  const cw = T.current_window;
+  const pw = T.prior_window;
+  summaryEl.innerHTML = `
+    <div class="trend-row">
+      <span class="trend-label">Sessions</span>
+      <span class="trend-values">
+        <span class="trend-prior">${pw ? pw.sessions : '—'}</span>
+        <span>→</span>
+        <span class="trend-current">${cw.sessions}</span>
+      </span>
+    </div>
+    <div class="trend-row">
+      <span class="trend-label">Total Cost</span>
+      <span class="trend-values">
+        <span class="trend-prior">${pw ? '$' + pw.cost_usd.toFixed(2) : '—'}</span>
+        <span>→</span>
+        <span class="trend-current">$${cw.cost_usd.toFixed(2)}</span>
+      </span>
+    </div>
+    <div class="trend-row">
+      <span class="trend-label">Turns</span>
+      <span class="trend-values">
+        <span class="trend-prior">${pw ? pw.turns : '—'}</span>
+        <span>→</span>
+        <span class="trend-current">${cw.turns}</span>
+      </span>
+    </div>
+  `;
+
+  // Hook performance deltas
+  const hooksEl = document.getElementById('trend-hooks');
+  const hookData = (T.hook_trends || []).filter(h => h.current_ms != null || h.prior_ms != null);
+  if (!hookData.length) {
+    hooksEl.innerHTML = '<div class="no-data">no hook data</div>';
+  } else {
+    // Show top 6 by absolute change
+    const sorted = hookData
+      .filter(h => h.current_ms != null && h.prior_ms != null)
+      .sort((a, b) => Math.abs(b.change_pct || 0) - Math.abs(a.change_pct || 0))
+      .slice(0, 6);
+    const newHooks = hookData.filter(h => h.prior_ms == null && h.current_ms != null).slice(0, 3);
+    const retiredHooks = hookData.filter(h => h.current_ms == null && h.prior_ms != null).slice(0, 3);
+
+    let hHTML = '';
+    for (const h of sorted) {
+      const label = h.hook.split('/').pop() || h.hook.slice(0, 40);
+      hHTML += `<div class="trend-row">
+        <span class="trend-label" title="${h.hook}">${label}</span>
+        <span class="trend-values">
+          <span class="trend-prior">${h.prior_ms}ms</span>
+          <span>→</span>
+          <span class="trend-current">${h.current_ms}ms</span>
+          ${badge(h.change_pct, true)}
+        </span>
+      </div>`;
+    }
+    for (const h of newHooks) {
+      const label = h.hook.split('/').pop() || h.hook.slice(0, 40);
+      hHTML += `<div class="trend-row"><span class="trend-label" title="${h.hook}">${label}</span><span class="trend-values"><span class="trend-badge neutral">new — ${h.current_ms}ms</span></span></div>`;
+    }
+    for (const h of retiredHooks) {
+      const label = h.hook.split('/').pop() || h.hook.slice(0, 40);
+      hHTML += `<div class="trend-row"><span class="trend-label" title="${h.hook}">${label}</span><span class="trend-values"><span class="trend-badge neutral">retired</span></span></div>`;
+    }
+    hooksEl.innerHTML = hHTML || '<div class="no-data">no hook changes</div>';
+  }
+
+  // Inject trend badges into KPI cards
+  injectKpiBadges(T);
+}
+
+function injectKpiBadges(T) {
+  if (!T || !T.metrics) return;
+  const kpiMap = {
+    'kpi-cache': { key: 'cache_ratio', lower: false },
+    'kpi-cliffs': { key: 'cliffs_per_session', lower: true },
+    'kpi-errors': { key: 'tool_error_rate', lower: true },
+  };
+  for (const [elId, cfg] of Object.entries(kpiMap)) {
+    const m = T.metrics[cfg.key];
+    if (!m || m.change_pct == null) continue;
+    const el = document.getElementById(elId);
+    if (!el) continue;
+    const abs = Math.abs(m.change_pct);
+    if (abs < 5) continue;
+    const gotBetter = cfg.lower ? m.change_pct < 0 : m.change_pct > 0;
+    const cls = gotBetter ? 'improved' : 'regressed';
+    const arrow = m.change_pct < 0 ? '&#9660;' : '&#9650;';
+    el.insertAdjacentHTML('afterend', `<span class="trend-badge ${cls}" style="margin-left:0;margin-top:6px;display:inline-flex"><span class="arrow">${arrow}</span>${abs.toFixed(1)}% vs last week</span>`);
+  }
 }
 
 // ── Boot ────────────────────────────────────────────────
