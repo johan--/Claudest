@@ -1436,11 +1436,10 @@ def build_trends(conn: sqlite3.Connection) -> dict:
     def _window_kpis(where_clause: str) -> dict | None:
         """Compute KPIs for a time window defined by where_clause on session_metrics.first_turn_ts."""
         row = cur.execute(f"""
-            SELECT COUNT(*), SUM(turn_count), SUM(total_output_tokens),
+            SELECT COUNT(*), SUM(turn_count),
                    SUM(total_cache_read), SUM(total_cache_creation),
                    SUM(cache_cliff_count), SUM(tool_error_count),
-                   SUM(total_hook_ms), SUM(total_input_tokens),
-                   SUM(total_thinking)
+                   SUM(total_hook_ms)
             FROM session_metrics sm
             WHERE is_sidechain = 0 AND {where_clause}
         """).fetchone()
@@ -1448,14 +1447,11 @@ def build_trends(conn: sqlite3.Connection) -> dict:
         if sessions == 0:
             return None
         turns = row[1] or 0
-        total_output = row[2] or 0
-        cache_read = row[3] or 0
-        cache_creation = row[4] or 0
-        cliffs = row[5] or 0
-        tool_errors = row[6] or 0
-        hook_ms = row[7] or 0
-        total_input = row[8] or 0
-        total_thinking = row[9] or 0
+        cache_read = row[2] or 0
+        cache_creation = row[3] or 0
+        cliffs = row[4] or 0
+        tool_errors = row[5] or 0
+        hook_ms = row[6] or 0
 
         cache_denom = cache_read + cache_creation
         cache_ratio = round(cache_read / cache_denom, 4) if cache_denom > 0 else 0.0
@@ -1500,11 +1496,10 @@ def build_trends(conn: sqlite3.Connection) -> dict:
             "antipatterns_per_session": round(bash_antipatterns / sessions, 2),
             "tool_error_rate": round(tool_errors / total_tool_calls, 4) if total_tool_calls else 0,
             "hook_avg_ms": round(hook_ms / turns, 1) if turns else 0,
-            "total_cost_usd": round(window_cost, 2),
         }
 
-    current = _window_kpis("sm.first_turn_ts >= datetime('now', '-7 days')")
-    prior = _window_kpis("sm.first_turn_ts >= datetime('now', '-14 days') AND sm.first_turn_ts < datetime('now', '-7 days')")
+    current = _window_kpis("datetime(sm.first_turn_ts) >= datetime('now', '-7 days')")
+    prior = _window_kpis("datetime(sm.first_turn_ts) >= datetime('now', '-14 days') AND datetime(sm.first_turn_ts) < datetime('now', '-7 days')")
 
     if not current:
         return {}

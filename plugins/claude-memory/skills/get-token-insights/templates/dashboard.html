@@ -1132,7 +1132,6 @@ function initTrends(D) {
     if (Math.abs(changePct) < 5) return '<span class="trend-badge neutral">~0%</span>';
     const gotBetter = lowerIsBetter ? changePct < 0 : changePct > 0;
     const cls = gotBetter ? 'improved' : 'regressed';
-    const arrow = gotBetter ? '&#9660;' : '&#9650;';
     // For "lower is better" metrics, down arrow = good. For "higher is better", up = good.
     const displayArrow = changePct < 0 ? '&#9660;' : '&#9650;';
     return `<span class="trend-badge ${cls}"><span class="arrow">${displayArrow}</span>${Math.abs(changePct).toFixed(1)}%</span>`;
@@ -1262,7 +1261,6 @@ function initTrends(D) {
 function injectKpiBadges(T) {
   if (!T || !T.metrics) return;
   const kpiMap = {
-    'kpi-cost': { key: 'cost_per_session', lower: true },
     'kpi-cache': { key: 'cache_ratio', lower: false },
     'kpi-cliffs': { key: 'cliffs_per_session', lower: true },
     'kpi-errors': { key: 'tool_error_rate', lower: true },
