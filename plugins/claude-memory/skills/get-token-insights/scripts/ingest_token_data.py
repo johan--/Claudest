@@ -1373,6 +1373,9 @@ def build_output(conn: sqlite3.Connection) -> dict:
     findings = _insights_to_findings(insights)
     recommendations = _insights_to_recommendations(insights)
 
+    # Week-on-week trends
+    trends = build_trends(conn)
+
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "total_sessions": total_sessions,
@@ -1415,6 +1418,230 @@ def build_output(conn: sqlite3.Connection) -> dict:
         "insights": insights,
         "findings": findings,
         "recommendations": recommendations,
+        "trends": trends,
+    }
+
+
+# ── Trends Engine (week-on-week comparison) ───────────────────────────
+
+def build_trends(conn: sqlite3.Connection) -> dict:
+    """Compute week-on-week deltas for key metrics.
+
+    Splits data into two 7-day windows: 'current' (last 7 days) and
+    'prior' (7-14 days ago). Returns per-metric current/prior/change_pct
+    plus classified improved/regressed/new/retired lists.
+    """
+    cur = conn.cursor()
+
+    def _window_kpis(where_clause: str) -> dict | None:
+        """Compute KPIs for a time window defined by where_clause on session_metrics.first_turn_ts."""
+        row = cur.execute(f"""
+            SELECT COUNT(*), SUM(turn_count), SUM(total_output_tokens),
+                   SUM(total_cache_read), SUM(total_cache_creation),
+                   SUM(cache_cliff_count), SUM(tool_error_count),
+                   SUM(total_hook_ms), SUM(total_input_tokens),
+                   SUM(total_thinking)
+            FROM session_metrics sm
+            WHERE is_sidechain = 0 AND {where_clause}
+        """).fetchone()
+        sessions = row[0] or 0
+        if sessions == 0:
+            return None
+        turns = row[1] or 0
+        total_output = row[2] or 0
+        cache_read = row[3] or 0
+        cache_creation = row[4] or 0
+        cliffs = row[5] or 0
+        tool_errors = row[6] or 0
+        hook_ms = row[7] or 0
+        total_input = row[8] or 0
+        total_thinking = row[9] or 0
+
+        cache_denom = cache_read + cache_creation
+        cache_ratio = round(cache_read / cache_denom, 4) if cache_denom > 0 else 0.0
+
+        # Tool calls + antipatterns for this window
+        total_tool_calls = cur.execute(f"""
+            SELECT COUNT(*) FROM turn_tool_calls tc
+            JOIN session_metrics sm ON tc.session_id = sm.session_id
+            WHERE sm.is_sidechain = 0 AND {where_clause}
+        """).fetchone()[0] or 0
+
+        bash_antipatterns = cur.execute(f"""
+            SELECT SUM(CASE WHEN {_BASH_ANTIPATTERN_PREDICATE} THEN 1 ELSE 0 END)
+            FROM turn_tool_calls tc
+            JOIN session_metrics sm ON tc.session_id = sm.session_id
+            WHERE sm.is_sidechain = 0 AND {where_clause}
+        """).fetchone()[0] or 0
+
+        # Cost for this window (per-turn model-aware)
+        window_cost = 0.0
+        for crow in cur.execute(f"""
+            SELECT t.model,
+                   SUM(t.input_tokens), SUM(t.output_tokens),
+                   SUM(t.cache_read_tokens), SUM(t.cache_creation_tokens),
+                   SUM(t.ephem_5m_tokens), SUM(t.ephem_1h_tokens)
+            FROM turns t
+            JOIN session_metrics sm ON t.session_id = sm.session_id
+            WHERE sm.is_sidechain = 0 AND {where_clause}
+            GROUP BY t.model
+        """):
+            pricing = _get_pricing(crow[0])
+            window_cost += _turn_cost(crow[1] or 0, crow[2] or 0, crow[3] or 0,
+                                       crow[4] or 0, crow[5] or 0, crow[6] or 0, pricing)
+
+        return {
+            "sessions": sessions,
+            "turns": turns,
+            "cost_usd": round(window_cost, 2),
+            "cost_per_session": round(window_cost / sessions, 2),
+            "cache_ratio": cache_ratio,
+            "cliffs_per_session": round(cliffs / sessions, 3),
+            "antipatterns_per_session": round(bash_antipatterns / sessions, 2),
+            "tool_error_rate": round(tool_errors / total_tool_calls, 4) if total_tool_calls else 0,
+            "hook_avg_ms": round(hook_ms / turns, 1) if turns else 0,
+            "total_cost_usd": round(window_cost, 2),
+        }
+
+    current = _window_kpis("sm.first_turn_ts >= datetime('now', '-7 days')")
+    prior = _window_kpis("sm.first_turn_ts >= datetime('now', '-14 days') AND sm.first_turn_ts < datetime('now', '-7 days')")
+
+    if not current:
+        return {}
+
+    # Compute deltas
+    metrics = {}
+    compare_keys = [
+        ("cost_per_session", "Cost/Session", True),   # True = lower is better
+        ("cache_ratio", "Cache Ratio", False),         # False = higher is better
+        ("cliffs_per_session", "Cache Cliffs/Session", True),
+        ("antipatterns_per_session", "Bash Antipatterns/Session", True),
+        ("tool_error_rate", "Tool Error Rate", True),
+        ("hook_avg_ms", "Hook Avg Latency", True),
+    ]
+
+    improved = []
+    regressed = []
+
+    for key, label, lower_is_better in compare_keys:
+        cur_val = current.get(key, 0)
+        pri_val = prior.get(key, 0) if prior else None
+        change_pct = None
+        if pri_val is not None and pri_val != 0:
+            change_pct = round((cur_val - pri_val) / abs(pri_val) * 100, 1)
+        elif pri_val == 0 and cur_val != 0:
+            change_pct = 100.0  # appeared from zero
+
+        metrics[key] = {
+            "label": label,
+            "current": cur_val,
+            "prior": pri_val,
+            "change_pct": change_pct,
+        }
+
+        # Classify (only if meaningful change > 5%)
+        if change_pct is not None and abs(change_pct) > 5:
+            got_better = (change_pct < 0) if lower_is_better else (change_pct > 0)
+            if got_better:
+                improved.append(f"{label}: {change_pct:+.1f}%")
+            else:
+                regressed.append(f"{label}: {change_pct:+.1f}%")
+
+    # New/retired skills
+    current_skills = set()
+    prior_skills = set()
+    for row in cur.execute("""
+        SELECT tc.skill_name FROM turn_tool_calls tc
+        JOIN session_metrics sm ON tc.session_id = sm.session_id
+        WHERE sm.is_sidechain = 0 AND tc.skill_name IS NOT NULL
+          AND sm.first_turn_ts >= datetime('now', '-7 days')
+        GROUP BY tc.skill_name
+    """):
+        current_skills.add(row[0])
+    for row in cur.execute("""
+        SELECT tc.skill_name FROM turn_tool_calls tc
+        JOIN session_metrics sm ON tc.session_id = sm.session_id
+        WHERE sm.is_sidechain = 0 AND tc.skill_name IS NOT NULL
+          AND sm.first_turn_ts >= datetime('now', '-14 days')
+          AND sm.first_turn_ts < datetime('now', '-7 days')
+        GROUP BY tc.skill_name
+    """):
+        prior_skills.add(row[0])
+    new_skills = sorted(current_skills - prior_skills)
+    retired_skills = sorted(prior_skills - current_skills)
+
+    # New/retired hooks
+    current_hooks = set()
+    prior_hooks = set()
+    for row in cur.execute("""
+        SELECT he.hook_command FROM hook_executions he
+        JOIN session_metrics sm ON he.session_id = sm.session_id
+        WHERE sm.is_sidechain = 0
+          AND sm.first_turn_ts >= datetime('now', '-7 days')
+        GROUP BY he.hook_command
+    """):
+        current_hooks.add(row[0])
+    for row in cur.execute("""
+        SELECT he.hook_command FROM hook_executions he
+        JOIN session_metrics sm ON he.session_id = sm.session_id
+        WHERE sm.is_sidechain = 0
+          AND sm.first_turn_ts >= datetime('now', '-14 days')
+          AND sm.first_turn_ts < datetime('now', '-7 days')
+        GROUP BY he.hook_command
+    """):
+        prior_hooks.add(row[0])
+    new_hooks = sorted(current_hooks - prior_hooks)
+    retired_hooks = sorted(prior_hooks - current_hooks)
+
+    # Hook performance comparison (per-hook avg ms, current vs prior)
+    hook_trends = []
+    current_hook_perf = {}
+    prior_hook_perf = {}
+    for row in cur.execute("""
+        SELECT he.hook_command, CAST(AVG(he.duration_ms) AS INT)
+        FROM hook_executions he
+        JOIN session_metrics sm ON he.session_id = sm.session_id
+        WHERE sm.is_sidechain = 0 AND sm.first_turn_ts >= datetime('now', '-7 days')
+        GROUP BY he.hook_command
+    """):
+        current_hook_perf[row[0]] = row[1]
+    for row in cur.execute("""
+        SELECT he.hook_command, CAST(AVG(he.duration_ms) AS INT)
+        FROM hook_executions he
+        JOIN session_metrics sm ON he.session_id = sm.session_id
+        WHERE sm.is_sidechain = 0
+          AND sm.first_turn_ts >= datetime('now', '-14 days')
+          AND sm.first_turn_ts < datetime('now', '-7 days')
+        GROUP BY he.hook_command
+    """):
+        prior_hook_perf[row[0]] = row[1]
+
+    all_hooks = set(current_hook_perf) | set(prior_hook_perf)
+    for h in sorted(all_hooks):
+        cur_ms = current_hook_perf.get(h)
+        pri_ms = prior_hook_perf.get(h)
+        chg = None
+        if cur_ms is not None and pri_ms is not None and pri_ms > 0:
+            chg = round((cur_ms - pri_ms) / pri_ms * 100, 1)
+        hook_trends.append({
+            "hook": h,
+            "current_ms": cur_ms,
+            "prior_ms": pri_ms,
+            "change_pct": chg,
+        })
+
+    return {
+        "window_days": 7,
+        "current_window": current,
+        "prior_window": prior,
+        "metrics": metrics,
+        "improved": improved,
+        "regressed": regressed,
+        "new_skills": new_skills,
+        "retired_skills": retired_skills,
+        "new_hooks": new_hooks,
+        "retired_hooks": retired_hooks,
+        "hook_trends": hook_trends,
     }
 
 
@@ -1791,6 +2018,7 @@ def main() -> None:
         "generated_at", "total_sessions", "date_range", "kpis", "insights",
         "cost_by_project", "model_split",
         "skill_usage", "agent_delegation", "hook_performance",
+        "trends",
     }
     slim = {k: v for k, v in output.items() if k in slim_keys}
     slim_json = json.dumps(slim, default=str)

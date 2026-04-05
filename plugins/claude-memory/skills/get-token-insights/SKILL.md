@@ -62,6 +62,27 @@ Show which subagent types are spawned, how often, and whether model overrides ar
 ### Hook Performance
 Identify the slowest hooks by total runtime and average latency. Flag any hooks with high error rates.
 
+### Part C: What Changed (Week-on-Week)
+
+If the `trends` object in the JSON output is non-empty, present a week-on-week comparison:
+
+### Week-on-Week Trends
+State the current and prior window session counts and total cost.
+
+### Improved
+For each item in `trends.improved`, state the metric and its percentage change. Explain *why* it likely improved if you can infer from context (e.g., hook fix, retired skill, CLAUDE.md rule).
+
+### Regressed
+For each item in `trends.regressed`, flag it and suggest what might have caused it.
+
+### New & Retired
+List any new or retired skills and hooks. For new items, note whether they appear intentional. For retired items, confirm they are no longer needed.
+
+### Hook Performance Deltas
+Highlight the hooks with the biggest latency changes (from `trends.hook_trends`). For hooks that improved significantly, credit the fix. For hooks that got slower, flag for investigation.
+
+If `trends` is empty or has no `current_window`, skip Part C and note that not enough historical data exists for comparison yet.
+
 Present the full analysis as markdown with the sections above. Ask the user if they want to dive deeper into any specific project, skill, or insight.
 
 ## Step 3: Open Dashboard
